@@ -1,0 +1,50 @@
+{
+  "battle_id": "demo-lead-003",
+  "turn": 22,
+  "format": "singles",
+  "skill_level": "beginner",
+  "player": {
+    "active": {
+      "name": "Glacirin",
+      "archetype": "bulky-water",
+      "current_hp_percent": 69,
+      "known_moves": ["Freeze Beam", "Scald", "Haze", "Recover"],
+      "status": null,
+      "speed_tier": "medium",
+      "likely_role": "stability anchor"
+    },
+    "bench": [
+      {
+        "name": "Sparkit",
+        "archetype": "fast-sweeper",
+        "current_hp_percent": 91,
+        "known_moves": ["Thunderbolt", "Shadow Ball", "Nasty Plot", "Substitute"],
+        "status": null,
+        "speed_tier": "fast",
+        "likely_role": "closer"
+      }
+    ],
+    "hazards": [],
+    "momentum": "ahead"
+  },
+  "opponent": {
+    "active": {
+      "name": "Boulderox",
+      "archetype": "support-tank",
+      "current_hp_percent": 33,
+      "known_moves": ["Stone Edge", "Stealth Rock", "Taunt"],
+      "status": null,
+      "speed_tier": "slow",
+      "likely_role": "last defensive stop"
+    },
+    "bench": [],
+    "hazards": [],
+    "momentum": "behind"
+  },
+  "revealed_threats": [],
+  "recent_events": [
+    "Sparkit forced two switches and remains healthy.",
+    "Boulderox is the opponent's final sturdy pivot."
+  ],
+  "win_condition_hint": "Keep Sparkit hidden until Boulderox can no longer stop a sweep."
+}

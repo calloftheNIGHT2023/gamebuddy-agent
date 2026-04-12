@@ -1,0 +1,39 @@
+{
+  "game": "pokemon-battle-demo",
+  "glossary": {
+    "tempo": "How much control you have over the next few turns.",
+    "win condition": "The plan that most reliably closes the game from your current position.",
+    "pivot": "A safe switch or move used to improve board position."
+  },
+  "archetypes": {
+    "bulky-water": {
+      "strengths": ["survives neutral hits", "spreads status", "checks fire and rock threats"],
+      "weaknesses": ["electric pressure", "grass pressure", "can lose tempo if forced to recover"]
+    },
+    "fast-sweeper": {
+      "strengths": ["punishes weakened teams", "forces immediate respect"],
+      "weaknesses": ["fragile into priority", "hates chip damage"]
+    },
+    "support-tank": {
+      "strengths": ["sets hazards", "absorbs hits", "creates safe switches"],
+      "weaknesses": ["can become passive", "can invite setup"]
+    },
+    "revenge-killer": {
+      "strengths": ["checks boosted threats", "forces fast trades"],
+      "weaknesses": ["predictable move locks", "limited defensive value"]
+    }
+  },
+  "beginner_tips": [
+    "Do not tunnel on immediate damage if a safer pivot preserves your strongest endgame piece.",
+    "Track which opposing threat actually wins the game if left unchecked.",
+    "Chip damage matters because it turns later knockouts into clean decisions.",
+    "If information is missing, prefer lower-risk lines over flashy reads.",
+    "When behind, stabilize first and only then look for a comeback sequence."
+  ],
+  "threat_tags": {
+    "dragon-dance": "setup sweeper",
+    "choice-scarf": "speed control",
+    "stealth-rock": "hazard pressure",
+    "priority": "clean-up threat"
+  }
+}

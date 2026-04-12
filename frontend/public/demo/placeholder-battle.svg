@@ -1,0 +1,16 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="720" rx="40" fill="#F4F8F5"/>
+  <rect x="54" y="54" width="1172" height="612" rx="28" fill="#E8EEF1"/>
+  <ellipse cx="385" cy="470" rx="225" ry="92" fill="#D2E7D7"/>
+  <ellipse cx="924" cy="275" rx="225" ry="92" fill="#EEDFC9"/>
+  <rect x="110" y="110" width="330" height="120" rx="24" fill="#16352B"/>
+  <text x="140" y="158" fill="#F8FAF7" font-size="34" font-family="Arial, sans-serif">Your Active: Voltfox</text>
+  <text x="140" y="202" fill="#E8C86A" font-size="24" font-family="Arial, sans-serif">HP 38% • Momentum Behind</text>
+  <rect x="838" y="470" width="330" height="120" rx="24" fill="#101826"/>
+  <text x="868" y="518" fill="#F8FAF7" font-size="34" font-family="Arial, sans-serif">Opponent: Drakeon</text>
+  <text x="868" y="562" fill="#E8C86A" font-size="24" font-family="Arial, sans-serif">Fast Threat • Setup Pressure</text>
+  <circle cx="360" cy="410" r="92" fill="#C75A2B"/>
+  <circle cx="918" cy="232" r="92" fill="#6A83E8"/>
+  <rect x="438" y="565" width="404" height="60" rx="20" fill="white"/>
+  <text x="470" y="603" fill="#101826" font-size="28" font-family="Arial, sans-serif">Turn 12 • Hazards Up • Need Safe Pivot</text>
+</svg>

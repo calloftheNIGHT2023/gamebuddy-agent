@@ -1,0 +1,51 @@
+{
+  "battle_id": "demo-stallbreak-002",
+  "turn": 18,
+  "format": "singles",
+  "skill_level": "intermediate",
+  "player": {
+    "active": {
+      "name": "Forgeape",
+      "archetype": "revenge-killer",
+      "current_hp_percent": 77,
+      "known_moves": ["Close Combat", "U-turn", "Knock Off", "Stone Edge"],
+      "status": null,
+      "speed_tier": "fast",
+      "likely_role": "breaker"
+    },
+    "bench": [
+      {
+        "name": "Leafowl",
+        "archetype": "support-tank",
+        "current_hp_percent": 46,
+        "known_moves": ["Defog", "Roost", "Leaf Storm", "U-turn"],
+        "status": "poisoned",
+        "speed_tier": "medium",
+        "likely_role": "utility"
+      }
+    ],
+    "hazards": ["spikes"],
+    "momentum": "neutral"
+  },
+  "opponent": {
+    "active": {
+      "name": "Walltoise",
+      "archetype": "bulky-water",
+      "current_hp_percent": 58,
+      "known_moves": ["Toxic", "Protect", "Surf", "Recover"],
+      "status": null,
+      "speed_tier": "slow",
+      "likely_role": "anchor"
+    },
+    "bench": [],
+    "hazards": [],
+    "momentum": "neutral"
+  },
+  "revealed_threats": ["priority"],
+  "recent_events": [
+    "Forgeape knocked off Leftovers earlier.",
+    "Leafowl took poison while clearing hazards.",
+    "Walltoise is trying to outlast the team."
+  ],
+  "win_condition_hint": "Break Walltoise without losing Forgeape to avoid a long defensive collapse."
+}

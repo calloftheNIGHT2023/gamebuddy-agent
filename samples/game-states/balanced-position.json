@@ -1,0 +1,60 @@
+{
+  "battle_id": "demo-balanced-001",
+  "turn": 12,
+  "format": "singles",
+  "skill_level": "beginner",
+  "player": {
+    "active": {
+      "name": "Voltfox",
+      "archetype": "fast-sweeper",
+      "current_hp_percent": 38,
+      "known_moves": ["Thunderbolt", "Volt Switch", "Flame Burst", "Protect"],
+      "status": null,
+      "speed_tier": "fast",
+      "likely_role": "late-game cleaner"
+    },
+    "bench": [
+      {
+        "name": "Mosshell",
+        "archetype": "support-tank",
+        "current_hp_percent": 71,
+        "known_moves": ["Spikes", "Recover", "Body Press", "Roar"],
+        "status": null,
+        "speed_tier": "slow",
+        "likely_role": "hazard setter"
+      },
+      {
+        "name": "Aquaphin",
+        "archetype": "bulky-water",
+        "current_hp_percent": 82,
+        "known_moves": ["Scald", "Flip Turn", "Recover", "Ice Beam"],
+        "status": null,
+        "speed_tier": "medium",
+        "likely_role": "pivot"
+      }
+    ],
+    "hazards": [],
+    "momentum": "behind"
+  },
+  "opponent": {
+    "active": {
+      "name": "Drakeon",
+      "archetype": "fast-sweeper",
+      "current_hp_percent": 64,
+      "known_moves": ["Dragon Dance", "Dual Wingbeat", "Earthquake"],
+      "status": null,
+      "speed_tier": "fast",
+      "likely_role": "setup sweeper"
+    },
+    "bench": [],
+    "hazards": ["stealth-rock"],
+    "momentum": "ahead"
+  },
+  "revealed_threats": ["dragon-dance", "stealth-rock"],
+  "recent_events": [
+    "Voltfox forced out Ironoak last turn.",
+    "Opponent set Stealth Rock on turn 9.",
+    "Drakeon entered the field safely."
+  ],
+  "win_condition_hint": "Keep Voltfox healthy enough to clean after Drakeon is chipped."
+}
