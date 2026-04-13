@@ -1,7 +1,5 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
 import type { Locale } from "@/lib/types";
 
 type Props = {
@@ -11,16 +9,13 @@ type Props = {
 };
 
 export function LocaleSwitcher({ locale, label, onLocaleChange }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
   function setLocale(nextLocale: Locale) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     params.set("lang", nextLocale);
     window.localStorage.setItem("gamebuddy:locale", nextLocale);
     onLocaleChange?.(nextLocale);
-    router.push(`${pathname}?${params.toString()}`);
+    const nextUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, "", nextUrl);
   }
 
   return (

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { playHubContent, translations } from "@/lib/content";
@@ -11,14 +14,22 @@ const modes = [
   { href: "/play/survivor-sandbox", key: "survivor-sandbox" },
 ] as const;
 
-type Props = {
-  searchParams?: {
-    lang?: string;
-  };
-};
+export default function PlayHubPage() {
+  const [locale, setLocale] = useState<Locale>("en");
 
-export default function PlayHubPage({ searchParams }: Props) {
-  const locale: Locale = searchParams?.lang === "zh" ? "zh" : "en";
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+      return;
+    }
+    const storedLocale = window.localStorage.getItem("gamebuddy:locale");
+    if (storedLocale === "en" || storedLocale === "zh") {
+      setLocale(storedLocale);
+    }
+  }, []);
+
   const t = playHubContent[locale];
   const common = translations[locale];
 
@@ -32,7 +43,7 @@ export default function PlayHubPage({ searchParams }: Props) {
             <p className="mt-4 max-w-3xl text-base text-ink/72">{t.description}</p>
           </div>
           <div className="flex items-center gap-3">
-            <LocaleSwitcher locale={locale} label={common.langLabel} />
+            <LocaleSwitcher locale={locale} label={common.langLabel} onLocaleChange={setLocale} />
             <Link href={`/?lang=${locale}`} className="rounded-full bg-white px-5 py-3 text-sm font-semibold shadow-card">
               {t.back}
             </Link>

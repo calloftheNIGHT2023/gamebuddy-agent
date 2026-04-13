@@ -22,6 +22,12 @@ export default function HomeClient({ samples, initialLocale }: Props) {
   const [game, setGame] = useState<GameKey>("pokemon-battle-demo");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+      return;
+    }
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
     if (storedLocale === "en" || storedLocale === "zh") {
       setLocale(storedLocale);

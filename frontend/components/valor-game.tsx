@@ -346,8 +346,12 @@ export function ValorGame({ initialLocale }: { initialLocale: Locale }) {
   }, [currentTile]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
-    if (storedLocale === "en" || storedLocale === "zh") {
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+    } else if (storedLocale === "en" || storedLocale === "zh") {
       setLocale(storedLocale);
     }
     const raw = window.localStorage.getItem("gamebuddy:valor-save");
@@ -764,7 +768,7 @@ export function ValorGame({ initialLocale }: { initialLocale: Locale }) {
               <p className="mt-4 max-w-3xl text-base text-ink/72">{t.introBody}</p>
             </div>
             <div className="flex items-center gap-3">
-              <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} />
+              <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} onLocaleChange={setLocale} />
               <Link href={`/?lang=${locale}`} className="rounded-full bg-white px-5 py-3 text-sm font-semibold shadow-card">
                 {t.back}
               </Link>
@@ -841,7 +845,7 @@ export function ValorGame({ initialLocale }: { initialLocale: Locale }) {
             <h1 className="mt-2 font-display text-4xl">{t.title}</h1>
           </div>
           <div className="flex gap-3">
-            <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} />
+            <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} onLocaleChange={setLocale} />
             <button type="button" onClick={resetRun} className="rounded-full bg-white px-5 py-3 text-sm font-semibold shadow-card">
               {t.resetRun}
             </button>

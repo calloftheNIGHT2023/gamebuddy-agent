@@ -1,8 +1,30 @@
 import { AnalysisResponse, GameKey, GameState } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+function resolveApiBase() {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000/api/v1";
+    }
+  }
+
+  return "";
+}
+
+const API_BASE = resolveApiBase();
+
+function assertApiBase() {
+  if (!API_BASE) {
+    throw new Error("API endpoint is not configured. Set NEXT_PUBLIC_API_BASE_URL for the deployed frontend.");
+  }
+}
 
 export async function analyzeState(game: GameKey, question: string, state: GameState): Promise<AnalysisResponse> {
+  assertApiBase();
   const response = await fetch(`${API_BASE}/analyze/state`, {
     method: "POST",
     headers: {
@@ -23,6 +45,7 @@ export async function analyzeState(game: GameKey, question: string, state: GameS
 }
 
 export async function analyzeScreenshot(game: GameKey, question: string, file: File): Promise<AnalysisResponse> {
+  assertApiBase();
   const formData = new FormData();
   formData.append("game", game);
   formData.append("question", question);

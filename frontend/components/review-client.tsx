@@ -17,11 +17,15 @@ export function ReviewClient({ initialLocale }: Props) {
 
   useEffect(() => {
     const stored = window.localStorage.getItem("gamebuddy:last-result");
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
     if (stored) {
       setResult(JSON.parse(stored) as AnalysisResponse);
     }
-    if (storedLocale === "en" || storedLocale === "zh") {
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+    } else if (storedLocale === "en" || storedLocale === "zh") {
       setLocale(storedLocale);
     }
   }, []);
@@ -44,7 +48,7 @@ export function ReviewClient({ initialLocale }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <LocaleSwitcher locale={locale} label={t.langLabel} />
+        <LocaleSwitcher locale={locale} label={t.langLabel} onLocaleChange={setLocale} />
       </div>
       <div className="rounded-3xl bg-ink p-8 text-white shadow-card">
         <p className="text-xs uppercase tracking-[0.24em] text-gold/80">{t.reviewTitle}</p>

@@ -200,8 +200,14 @@ export function SurvivorSandbox({ initialLocale }: { initialLocale: Locale }) {
 
   useEffect(() => {
     setIsMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
-    if (storedLocale === "en" || storedLocale === "zh") setLocale(storedLocale);
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+    } else if (storedLocale === "en" || storedLocale === "zh") {
+      setLocale(storedLocale);
+    }
     const rawScore = window.localStorage.getItem("gamebuddy:survivor-high-score");
     if (rawScore) {
       const parsed = Number(rawScore);
@@ -416,7 +422,7 @@ export function SurvivorSandbox({ initialLocale }: { initialLocale: Locale }) {
             <p className="mt-3 max-w-3xl text-sm text-white/70 md:text-base">{t.subtitle}</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} />
+            <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} onLocaleChange={setLocale} />
             <button type="button" onClick={() => setGame(initialState())} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-card">
               {t.restart}
             </button>

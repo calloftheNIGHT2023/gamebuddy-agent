@@ -103,6 +103,12 @@ export function MobaSandbox({ initialLocale }: { initialLocale: Locale }) {
   const t = copy[locale];
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+      return;
+    }
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
     if (storedLocale === "en" || storedLocale === "zh") {
       setLocale(storedLocale);
@@ -147,7 +153,7 @@ export function MobaSandbox({ initialLocale }: { initialLocale: Locale }) {
             <h1 className="mt-2 font-display text-4xl">{t.title}</h1>
           </div>
           <div className="flex gap-3">
-            <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} />
+            <LocaleSwitcher locale={locale} label={locale === "zh" ? "语言" : "Language"} onLocaleChange={setLocale} />
             <button
               type="button"
               onClick={() => {

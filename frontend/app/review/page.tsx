@@ -1,18 +1,29 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ReviewClient } from "@/components/review-client";
 import { translations } from "@/lib/content";
 import type { Locale } from "@/lib/types";
 
-type Props = {
-  searchParams?: {
-    lang?: string;
-  };
-};
+export default function ReviewPage() {
+  const [locale, setLocale] = useState<Locale>("en");
 
-export default function ReviewPage({ searchParams }: Props) {
-  const locale: Locale = searchParams?.lang === "zh" ? "zh" : "en";
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryLocale = params.get("lang");
+    if (queryLocale === "en" || queryLocale === "zh") {
+      setLocale(queryLocale);
+      return;
+    }
+    const storedLocale = window.localStorage.getItem("gamebuddy:locale");
+    if (storedLocale === "en" || storedLocale === "zh") {
+      setLocale(storedLocale);
+    }
+  }, []);
+
   const t = translations[locale];
 
   return (
@@ -23,7 +34,7 @@ export default function ReviewPage({ searchParams }: Props) {
           <h1 className="mt-2 font-display text-4xl text-ink">{t.reviewTitle}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <LocaleSwitcher locale={locale} label={t.langLabel} />
+          <LocaleSwitcher locale={locale} label={t.langLabel} onLocaleChange={setLocale} />
           <Link href={`/?lang=${locale}`} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-card">
             {t.reviewBack}
           </Link>
