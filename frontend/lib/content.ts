@@ -5,7 +5,7 @@ export const translations = {
     badge: "Build log",
     title: "GameBuddy Agent development log",
     subtitle:
-      "A running record of architecture changes, playable prototypes, and decision-engine updates for this AI game analysis project.",
+      "A running record of architecture changes, playable prototypes, and decision-engine updates across this browser game analysis lab.",
     chips: ["FastAPI backend", "Next.js + Tailwind frontend", "Agent-style orchestration"],
     imageNote: "Current visual placeholder. Replace it with a real project screenshot when the final capture set is ready.",
     emptyResult: "Submit a screenshot or structured state to generate a phase read, best direction, and review summary.",

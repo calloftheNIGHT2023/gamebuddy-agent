@@ -1,6 +1,6 @@
 # GameBuddy Agent
 
-GameBuddy Agent is a local-first game analysis web app. It accepts a structured game state or a screenshot placeholder input, then returns:
+GameBuddy Agent is a browser-based game analysis lab. It combines structured review demos with playable sandbox modules, then turns a game state or screenshot placeholder input into:
 
 - a short situation summary
 - a phase read and recommended direction
@@ -8,18 +8,18 @@ GameBuddy Agent is a local-first game analysis web app. It accepts a structured 
 - a beginner-friendly explanation
 - a review-style breakdown of likely mistakes and next steps
 
-This repository also includes several browser-playable prototype modules in `/play`.
+This repository also includes browser-playable modules in `/play`, including a web RPG adaptation, macro sandboxes, and a small survivor-style prototype.
 
 ## What This Project Is
 
-GameBuddy Agent is a strategy and review tool.
+GameBuddy Agent is a strategy and review tool with a playable frontend surface.
 
 It is built for:
 
 - post-match review
 - situation explanation
 - lightweight coaching
-- experimenting with agent-style orchestration for game analysis
+- testing modular analysis flows and browser prototypes in the same project
 
 It is not built for:
 

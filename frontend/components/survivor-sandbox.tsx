@@ -12,6 +12,7 @@ type Projectile = Vec & { id: number; vx: number; vy: number; damage: number; ra
 type Gem = Vec & { id: number; value: number };
 type UpgradeKey = "fireRate" | "damage" | "speed" | "magnet" | "maxHp";
 type Upgrade = { key: UpgradeKey; title: Record<Locale, string>; description: Record<Locale, string> };
+type Prediction = { phase: string; best: string; avoid: string };
 
 type GameState = {
   player: Vec;
@@ -184,6 +185,264 @@ function spawnEnemy(id: number, elapsedMs: number): Enemy {
 function pickUpgrades(level: number) {
   const offset = (level - 2) % upgrades.length;
   return [0, 1, 2].map((index) => upgrades[(offset + index) % upgrades.length]);
+}
+
+function pickVariant<T>(items: T[], seed: number) {
+  return items[Math.abs(seed) % items.length];
+}
+
+function buildPrediction(game: GameState, locale: Locale): Prediction {
+  const hpRatio = game.maxHp > 0 ? game.hp / game.maxHp : 0;
+  const pressure = game.enemies.length;
+  const nearEnemies = game.enemies.filter((enemy) => distance(enemy, game.player) <= 110).length;
+  const nearbyGems = game.gems.filter((gem) => distance(gem, game.player) <= game.magnet * 1.8).length;
+  const xpRatio = game.xp / xpToNextLevel(game.level);
+  const buildPower = game.damage + (0.6 / game.fireRate) * 10 + game.speed * 0.05 + game.magnet * 0.03;
+  const buildLean =
+    game.damage >= 32 || game.fireRate <= 0.3
+      ? "offense"
+      : game.maxHp >= 150 || game.speed >= 285
+        ? "survival"
+        : "economy";
+  const seed = game.level + game.kills + Math.floor(game.timeMs / 5000) + pressure;
+
+  if (game.pendingLevelUps > 0) {
+    return locale === "zh"
+      ? {
+          phase: "升级抉择窗口",
+          best: pickVariant([
+            "这一拍先补能立刻改变节奏的词条。火力偏弱时优先射速或伤害，经验难吃时优先拾取范围。",
+            "别把升级当成单纯加数值，先补当前最限制跑图效率的短板，再考虑贪后期成长。",
+            "如果场上压力刚上来，这次升级先选能马上稳住局面的强化，而不是最慢热的方案。",
+          ], seed),
+          avoid: pickVariant([
+            "不要在已经缺输出的时候继续堆纯血量。",
+            "不要只看面板好看，忽略现在最影响走位和清怪的瓶颈。",
+            "不要每次都选同一类强化，失衡 build 会在中盘开始卡节奏。",
+          ], seed + 1),
+        }
+      : {
+          phase: "Level-up decision window",
+          best: pickVariant([
+            "Use this pause to fix the stat that changes board control immediately. Take fire rate or damage if kills are slow, and magnet if XP is slipping away.",
+            "Treat this as a tempo choice, not just a number upgrade. Patch the stat that is currently limiting your movement and clear speed.",
+            "If the wave has just started tightening, take the upgrade that stabilizes the next thirty seconds instead of the slowest scaling option.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not keep stacking pure HP when your real problem is weak damage.",
+            "Do not pick the prettiest stat line if it leaves your current bottleneck untouched.",
+            "Do not tunnel on one upgrade family every level; the run gets awkward once the build loses balance.",
+          ], seed + 1),
+        };
+  }
+
+  if (hpRatio <= 0.3 && (pressure >= 10 || nearEnemies >= 4)) {
+    return locale === "zh"
+      ? {
+          phase: "高压脱身阶段",
+          best: pickVariant([
+            "先保命，不要急着吃远处经验。沿外圈拉开怪群，把最近的一侧削薄后再回收资源。",
+            "你的首要任务是制造空白区。先横向拉扯，再顺着已经清开的方向接经验球。",
+            "这一段应该主动放慢贪刀节奏，用更大的绕圈半径换安全距离。",
+          ], seed),
+          avoid: pickVariant([
+            "不要贴着怪群边缘硬换血。",
+            "不要为了单颗经验球直接折返冲进包围圈。",
+            "不要在被多面夹击时走直线，直线最容易被封头。",
+          ], seed + 1),
+        }
+      : {
+          phase: "High-pressure escape phase",
+          best: pickVariant([
+            "Play for survival first. Skip the far gems, drag the pack wide, and only re-enter through the thinnest side.",
+            "Your job here is to create blank space. Strafe sideways, open one lane, then reclaim XP through the safe corridor.",
+            "Slow down the greed for a few seconds and trade a wider kite radius for cleaner breathing room.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not hug the pack edge and trade HP.",
+            "Do not turn back into the swarm for a single gem.",
+            "Do not sprint in straight lines when enemies are collapsing from multiple angles.",
+          ], seed + 1),
+        };
+  }
+
+  if (game.level <= 3 || game.timeMs < 45000) {
+    return locale === "zh"
+      ? {
+          phase: "开局成型阶段",
+          best: pickVariant([
+            "这一段重点是把 build 先立起来。优先保证清怪节奏，其次再补跑图舒适度。",
+            "开局别急着赌后期，先把射速、伤害和拾取效率做成一个顺手的底盘。",
+            "现在更像铺路期，能让你稳定升到下一两级的强化价值最高。",
+          ], seed),
+          avoid: pickVariant([
+            "不要太早把点数全压在单一生存属性上。",
+            "不要为了追怪偏离经验密集区太远。",
+            "不要让升级选择变成随机乱拿，前几级最需要连贯思路。",
+          ], seed + 1),
+        }
+      : {
+          phase: "Early build-forming phase",
+          best: pickVariant([
+            "The goal here is to establish a usable build shell. Secure clear speed first, then smooth out movement and pickup comfort.",
+            "Do not gamble on late-game fantasies yet. Build a reliable base with fire rate, damage, and XP collection efficiency.",
+            "This is still a setup period, so upgrades that reliably get you through the next couple of levels are worth the most.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not dump early levels into one survival stat and call it a build.",
+            "Do not chase enemies so far that you abandon the main XP lane.",
+            "Do not let the first few upgrades become random picks; this phase needs a coherent line.",
+          ], seed + 1),
+        };
+  }
+
+  if (nearbyGems >= 8 && nearEnemies <= 2) {
+    return locale === "zh"
+      ? {
+          phase: "资源回收窗口",
+          best: pickVariant([
+            "场上有一波安全资源可以吃，优先把这片经验球收干净，把领先转成下一次升级。",
+            "这是典型的回收时间，先走一条短线路把近处经验吸完，再决定往哪边转场。",
+            "你刚清出了一块真空区，立刻把资源兑现，不要让经验球散掉。",
+          ], seed),
+          avoid: pickVariant([
+            "不要在安全窗口里空转。",
+            "不要为了追孤立怪把整片近身资源放掉。",
+            "不要刚清完局面又主动把自己送回高压区。",
+          ], seed + 1),
+        }
+      : {
+          phase: "Resource collection window",
+          best: pickVariant([
+            "You have a safe pocket of resources. Vacuum up the nearby gems first and convert this opening into the next level.",
+            "This is a cleanup window, so run a short route through the closest XP cluster before rotating again.",
+            "You just created real space. Cash it in immediately instead of letting the gems sit on the floor.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not drift around during a free collection window.",
+            "Do not abandon a whole gem pocket just to chase one isolated enemy.",
+            "Do not walk yourself back into pressure right after stabilizing the board.",
+          ], seed + 1),
+        };
+  }
+
+  if (pressure <= 6 && hpRatio >= 0.7 && buildPower >= 55) {
+    return locale === "zh"
+      ? {
+          phase: "滚雪球阶段",
+          best: pickVariant([
+            "你已经拿到主动权了，继续边清边收，把节奏滚成连续升级。",
+            "现在可以更主动一点，优先处理最近的怪群，让场面一直保持在你可控的密度。",
+            "这段时间适合扩大领先，把安全清怪直接转化成经验和分数。",
+          ], seed),
+          avoid: pickVariant([
+            "不要在优势局面里无意义绕远。",
+            "不要为了保守过头而浪费这段低压力时间。",
+            "不要让自己的走位和火力脱节，领先时更该持续收缩残局。",
+          ], seed + 1),
+        }
+      : {
+          phase: "Snowball phase",
+          best: pickVariant([
+            "You have control now. Keep clearing while collecting and turn this into back-to-back levels.",
+            "This is the time to play forward a bit more, trim the nearest pack, and keep the board at a density you can dictate.",
+            "Use the safe state to widen your lead by converting low-risk clears into XP and score.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not waste a lead by wandering without purpose.",
+            "Do not become so passive that the low-pressure window expires unused.",
+            "Do not let your movement and firing rhythm disconnect when the board is already under control.",
+          ], seed + 1),
+        };
+  }
+
+  if (buildLean === "survival" && buildPower < 58) {
+    return locale === "zh"
+      ? {
+          phase: "伤害补课阶段",
+          best: pickVariant([
+            "你的容错已经够了，下一步该补的是清怪效率，不然中后段会越拖越挤。",
+            "现在最缺的是把安全感转成处理速度，优先补射速或伤害。",
+            "这套 build 偏稳，但再不补输出就会开始靠走位硬拖波次。",
+          ], seed),
+          avoid: pickVariant([
+            "不要继续堆血量和移速，局面已经在提醒你火力不够。",
+            "不要误以为能活就算稳，清不动怪同样会慢性崩盘。",
+            "不要忽视升级后的击杀速度变化，它决定你能不能保住节奏。",
+          ], seed + 1),
+        }
+      : {
+          phase: "Damage catch-up phase",
+          best: pickVariant([
+            "Your survivability is fine; what the run needs next is faster clearing before the later waves start to stack up.",
+            "Convert safety into kill speed now. Fire rate or damage is the cleanest next investment.",
+            "This build is stable, but it is about to rely too much on pure movement unless you patch the offensive side.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not keep stacking HP and speed when the board is clearly asking for damage.",
+            "Do not confuse 'still alive' with 'actually stable'; slow clears collapse later.",
+            "Do not ignore how much level-ups should change your kill tempo.",
+          ], seed + 1),
+        };
+  }
+
+  if (xpRatio >= 0.75 && nearbyGems >= 4) {
+    return locale === "zh"
+      ? {
+          phase: "冲级过渡阶段",
+          best: pickVariant([
+            "离下一次升级已经很近了，优先规划一条安全吃满经验的短路线。",
+            "这波更适合稳稳拿等级，不必急着拼极限击杀。",
+            "把眼前这批经验兑现成升级，再利用升级窗口重新定 build 方向。",
+          ], seed),
+          avoid: pickVariant([
+            "不要在快升级时把自己送进乱团。",
+            "不要忽视近身经验球，差一点点时最容易因为贪远处而亏掉节奏。",
+            "不要为了追单个目标打断升级前的收资源路线。",
+          ], seed + 1),
+        }
+      : {
+          phase: "Level-rush transition",
+          best: pickVariant([
+            "You are close to the next level, so route through the safest gem line and secure the upgrade first.",
+            "This is a good moment to play for the level itself rather than forcing max kills.",
+            "Cash in the nearby XP, trigger the upgrade, and let that choice redefine the next segment of the run.",
+          ], seed),
+          avoid: pickVariant([
+            "Do not dive into chaos when the next level is already within reach.",
+            "Do not ignore nearby gems and overchase a distant target right before leveling.",
+            "Do not break your collection route for one low-value duel.",
+          ], seed + 1),
+        };
+  }
+
+  return locale === "zh"
+    ? {
+        phase: "中盘控场阶段",
+        best: pickVariant([
+          "继续维持移动节奏，把怪群揉成一团后从外侧慢慢削。",
+          "当前局面更适合稳控密度，别急着硬冲，先用走位把怪线拉顺。",
+          "中盘最重要的是保持场面秩序，让击杀、经验和走位三件事重新对齐。",
+        ], seed),
+        avoid: pickVariant([
+          "不要直线穿最密的怪堆。",
+          "不要在没有清出口的时候突然折返。",
+          "不要只顾击杀而失去对怪群形状的控制。",
+        ], seed + 1),
+      }
+    : {
+        phase: "Mid-run control phase",
+        best: pickVariant([
+          "Keep the movement rhythm steady, compress the swarm into one mass, and shave it from the outside.",
+          "This board wants density control more than heroics. Straighten the enemy line with movement before forcing damage.",
+          "The mid game is about re-aligning kills, XP flow, and positioning so the run stays orderly.",
+        ], seed),
+        avoid: pickVariant([
+          "Do not run straight through the densest pack.",
+          "Do not hard turn back before you have opened an exit lane.",
+          "Do not focus so much on killing that you lose control of the swarm shape.",
+        ], seed + 1),
+      };
 }
 
 export function SurvivorSandbox({ initialLocale }: { initialLocale: Locale }) {
@@ -382,6 +641,7 @@ export function SurvivorSandbox({ initialLocale }: { initialLocale: Locale }) {
   const hpRatio = Math.max(0, game.hp / game.maxHp);
   const xpRatio = game.xp / xpToNextLevel(game.level);
   const timeText = `${Math.floor(game.timeMs / 60000).toString().padStart(2, "0")}:${Math.floor((game.timeMs % 60000) / 1000).toString().padStart(2, "0")}`;
+  const dynamicPrediction = useMemo(() => buildPrediction(game, locale), [game, locale]);
   const prediction = useMemo(() => {
     const pressure = game.enemies.length;
     if (game.hp <= game.maxHp * 0.35 && pressure >= 10) {
@@ -490,15 +750,15 @@ export function SurvivorSandbox({ initialLocale }: { initialLocale: Locale }) {
               <div className="mt-4 space-y-4 text-sm text-white/75">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">{t.phase}</p>
-                  <p className="mt-1 text-base text-white">{prediction.phase}</p>
+                  <p className="mt-1 text-base text-white">{dynamicPrediction.phase}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">{t.bestDirection}</p>
-                  <p className="mt-1">{prediction.best}</p>
+                  <p className="mt-1">{dynamicPrediction.best}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300">{t.avoidLine}</p>
-                  <p className="mt-1">{prediction.avoid}</p>
+                  <p className="mt-1">{dynamicPrediction.avoid}</p>
                 </div>
               </div>
             </div>

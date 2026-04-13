@@ -6,7 +6,7 @@ from app.core.config import settings
 
 app = FastAPI(
     title="GameBuddy Agent API",
-    description="AI coaching backend for turn-based battle analysis.",
+    description="Backend API for the GameBuddy browser analysis lab and playable sandbox demos.",
     version="0.1.0",
 )
 
