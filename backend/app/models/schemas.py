@@ -1,41 +1,16 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 
-class Combatant(BaseModel):
-    name: str
-    archetype: str
-    current_hp_percent: int = Field(ge=0, le=100)
-    known_moves: list[str] = Field(default_factory=list)
-    status: str | None = None
-    speed_tier: Literal["slow", "medium", "fast"] = "medium"
-    likely_role: str
-
-
-class TeamSnapshot(BaseModel):
-    active: Combatant
-    bench: list[Combatant] = Field(default_factory=list)
-    hazards: list[str] = Field(default_factory=list)
-    momentum: Literal["behind", "neutral", "ahead"] = "neutral"
-
-
-class BattleState(BaseModel):
-    battle_id: str
-    turn: int = Field(ge=1)
-    format: str = "singles"
-    skill_level: Literal["beginner", "intermediate", "advanced"] = "beginner"
-    player: TeamSnapshot
-    opponent: TeamSnapshot
-    revealed_threats: list[str] = Field(default_factory=list)
-    recent_events: list[str] = Field(default_factory=list)
-    win_condition_hint: str | None = None
+SupportedGame = Literal["pokemon-battle-demo", "moba-postmatch-demo", "rpg-build-demo"]
 
 
 class PerceptionResult(BaseModel):
     source: Literal["json", "screenshot"]
+    game: SupportedGame
     confidence: float = Field(ge=0.0, le=1.0)
-    extracted_state: BattleState
+    extracted_state: dict[str, Any]
     perception_notes: list[str] = Field(default_factory=list)
 
 
@@ -43,6 +18,14 @@ class TacticalAdviceItem(BaseModel):
     title: str
     recommendation: str
     reasoning: str
+    confidence: Literal["low", "medium", "high"]
+
+
+class DirectionPrediction(BaseModel):
+    current_phase: str
+    best_direction: str
+    why_now: str
+    avoid_direction: str
     confidence: Literal["low", "medium", "high"]
 
 
@@ -55,6 +38,7 @@ class ReviewSection(BaseModel):
 
 class AnalysisResponse(BaseModel):
     summary: str
+    direction_prediction: DirectionPrediction
     tactical_advice: list[TacticalAdviceItem]
     beginner_explanation: str
     risks_or_uncertainties: list[str]
@@ -64,6 +48,6 @@ class AnalysisResponse(BaseModel):
 
 
 class StateAnalysisRequest(BaseModel):
-    game: str = "pokemon-battle-demo"
+    game: SupportedGame = "pokemon-battle-demo"
     question: str
-    state: BattleState
+    state: dict[str, Any]

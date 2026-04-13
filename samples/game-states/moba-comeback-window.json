@@ -1,0 +1,19 @@
+{
+  "match_id": "moba-demo-001",
+  "game_time_minutes": 24,
+  "player_role": "mid",
+  "champion": "Storm Arcanist",
+  "team_gold_diff": -1800,
+  "next_objective": "dragon",
+  "recent_deaths": 2,
+  "kill_participation": 61,
+  "vision_score_trend": "falling",
+  "lane_state": "side waves are pushing away from your team",
+  "enemy_carry_threat": "Shadow Ranger",
+  "current_problem": "arriving late to objective setup and getting picked in river transitions",
+  "notes": [
+    "Your flash will be up before dragon.",
+    "Top lane teleport is available.",
+    "Support has no ward item charges right now."
+  ]
+}

@@ -1,34 +1,18 @@
-export type Combatant = {
-  name: string;
-  archetype: string;
-  current_hp_percent: number;
-  known_moves: string[];
-  status?: string | null;
-  speed_tier: "slow" | "medium" | "fast";
-  likely_role: string;
-};
+export type Locale = "en" | "zh";
 
-export type TeamSnapshot = {
-  active: Combatant;
-  bench: Combatant[];
-  hazards: string[];
-  momentum: "behind" | "neutral" | "ahead";
-};
+export type GameKey = "pokemon-battle-demo" | "moba-postmatch-demo" | "rpg-build-demo";
 
-export type BattleState = {
-  battle_id: string;
-  turn: number;
-  format: string;
-  skill_level: "beginner" | "intermediate" | "advanced";
-  player: TeamSnapshot;
-  opponent: TeamSnapshot;
-  revealed_threats: string[];
-  recent_events: string[];
-  win_condition_hint?: string | null;
-};
+export type GameState = Record<string, unknown>;
 
 export type AnalysisResponse = {
   summary: string;
+  direction_prediction: {
+    current_phase: string;
+    best_direction: string;
+    why_now: string;
+    avoid_direction: string;
+    confidence: "low" | "medium" | "high";
+  };
   tactical_advice: {
     title: string;
     recommendation: string;

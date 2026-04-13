@@ -1,15 +1,15 @@
-import { AnalysisResponse, BattleState } from "@/lib/types";
+import { AnalysisResponse, GameKey, GameState } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-export async function analyzeState(question: string, state: BattleState): Promise<AnalysisResponse> {
+export async function analyzeState(game: GameKey, question: string, state: GameState): Promise<AnalysisResponse> {
   const response = await fetch(`${API_BASE}/analyze/state`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      game: "pokemon-battle-demo",
+      game,
       question,
       state
     })
@@ -22,8 +22,9 @@ export async function analyzeState(question: string, state: BattleState): Promis
   return response.json();
 }
 
-export async function analyzeScreenshot(question: string, file: File): Promise<AnalysisResponse> {
+export async function analyzeScreenshot(game: GameKey, question: string, file: File): Promise<AnalysisResponse> {
   const formData = new FormData();
+  formData.append("game", game);
   formData.append("question", question);
   formData.append("file", file);
 

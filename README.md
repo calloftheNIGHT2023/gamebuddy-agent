@@ -1,7 +1,7 @@
 # GameBuddy Agent
 
 GameBuddy Agent 是一个面向游戏教学、策略解释与赛后复盘的开源 AI 游戏助手。  
-当前 MVP 选择了“类宝可梦回合制对战”作为首个演示场景，支持两种输入方式：
+当前项目支持多个演示游戏场景，首个完成度最高的 MVP 仍然是“类宝可梦回合制对战”。目前支持两种输入方式：
 
 - 上传游戏截图
 - 粘贴结构化战局 JSON
@@ -45,11 +45,24 @@ GameBuddy Agent 的定位刚好相反：
 - 输出战术建议、置信度与不确定性说明
 - 提供新手友好的解释层
 - 提供复盘报告页面
+- 提供可直接游玩的网页游戏模式
 - Python 多代理后端架构
 - 本地知识库驱动，避免昂贵外部依赖
 - 内置示例 Prompt、示例战局与展示用 UI
 
 ## MVP 选择
+
+当前支持的 Demo 游戏：
+
+- 类宝可梦回合制对战
+- MOBA 赛后复盘 Demo
+- RPG Build / 配装建议 Demo
+
+当前支持的网页可玩模式：
+
+- Heroes & Monsters Web
+- MOBA Sandbox
+- RPG Build Lab
 
 本项目首个 MVP 选择：**类宝可梦回合制对战教练**
 
@@ -65,7 +78,12 @@ GameBuddy Agent 的定位刚好相反：
 - 完整的 JSON 战局分析流程
 - 截图上传接口
 - 感知代理、知识代理、策略代理、复盘代理、编排器
+- 前端中英双语切换
 - 前端首页、输入面板、建议卡片、复盘页
+- 多游戏选择器与示例状态切换
+- 浏览器可玩游戏大厅 `/play`
+- `Heroes & Monsters` 网页改编版
+- MOBA 与 RPG 网页沙盒
 - 本地知识库与 3 份示例战局
 - Docker、测试、开发文档、路线图
 
@@ -86,8 +104,8 @@ flowchart LR
     C --> E[Knowledge Agent 知识代理]
     C --> F[Strategy Agent 策略代理]
     C --> G[Review Agent 复盘代理]
-    E --> H[本地知识库 JSON]
-    D --> I[结构化战局 或 截图占位输入]
+    E --> H[按游戏加载的本地知识 / 规则包]
+    D --> I[结构化状态 或 截图占位输入]
     C --> J[结构化分析结果]
     J --> A
 ```
@@ -149,6 +167,8 @@ docker compose up --build
 - 展示占位图：`frontend/public/demo/placeholder-battle.svg`
 - 示例战局：
   - `samples/game-states/balanced-position.json`
+  - `samples/game-states/moba-comeback-window.json`
+  - `samples/game-states/rpg-mage-build.json`
   - `samples/game-states/defensive-stall-break.json`
   - `samples/game-states/closing-out-a-lead.json`
 

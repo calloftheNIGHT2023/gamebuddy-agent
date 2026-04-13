@@ -1,0 +1,30 @@
+{
+  "character_name": "Lyra",
+  "class_name": "Arcane Mage",
+  "level": 37,
+  "build_focus": "burst spellcaster",
+  "current_goal": "clear the obsidian tower boss",
+  "pain_point": "running out of mana before the second phase and getting one-shot on mistakes",
+  "core_stats": {
+    "intelligence": 84,
+    "vitality": 26,
+    "mana_regen": 18,
+    "crit_chance": 12
+  },
+  "equipped_items": [
+    "Apprentice Staff +4",
+    "Traveler Robe +2",
+    "Mana Ring",
+    "Boots of Focus"
+  ],
+  "available_resources": {
+    "gold": 14200,
+    "upgrade_stones": 9,
+    "respec_tokens": 1
+  },
+  "notes": [
+    "Boss has a long second phase.",
+    "You have access to one dungeon with mana-oriented gear.",
+    "You are considering hybrid fire and ice scaling."
+  ]
+}
