@@ -1,5 +1,6 @@
 "use client";
 
+// 生存沙盒 demo，通过定时循环模拟走位、掉落和升级节奏。
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 

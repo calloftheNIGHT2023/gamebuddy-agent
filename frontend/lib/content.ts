@@ -1,3 +1,4 @@
+// 文案配置中心，集中维护多语言文本和 demo 展示内容。
 import type { GameKey, Locale } from "@/lib/types";
 
 export const translations = {
@@ -81,7 +82,7 @@ export const translations = {
       "把分析结果改成先判断当前阶段，再输出建议，避免只有泛泛的提示语。",
       "新增了一个类吸血鬼幸存者的浏览器原型，用来验证轻量动作循环。",
       "保留清晰的编排层，让感知、策略和复盘逻辑可以独立替换。",
-      "把 RPG、MOBA 和街机原型统一收进 play hub，形成一个完整展示面。",
+      "把 RPG、MOBA 和街机原型统一收到 play hub，形成一个完整展示面。",
     ],
   },
 } as const;
@@ -154,15 +155,25 @@ export const playHubContent = {
     eyebrow: "Playable modules",
     title: "Browser game builds and sandboxes",
     description:
-      "This section tracks the current playable surfaces in the repo, from the browser RPG port to lightweight sandbox prototypes.",
+      "This section tracks the current playable surfaces in the repo, from small solo demos to larger browser prototypes.",
     back: "Back to log",
     open: "Open mode",
     modes: {
+      "pokemon-duel": {
+        title: "Pokemon Duel Lab",
+        description: "A compact single-player 1v1 turn battle with chip damage, shields, and burst timing.",
+        tag: "Mini battle demo",
+      },
       "heroes-and-monsters": {
         title: "Heroes & Monsters Web",
         description:
           "A browser adaptation of the Java console RPG with map exploration, markets, and turn-based battles.",
         tag: "Full playable adaptation",
+      },
+      "moba-lane": {
+        title: "MOBA Lane Mini Match",
+        description: "A single-lane solo demo focused on farming, recalls, dragon timing, and tower pressure.",
+        tag: "Mini macro demo",
       },
       "moba-sandbox": {
         title: "MOBA Review Sandbox",
@@ -184,14 +195,24 @@ export const playHubContent = {
   zh: {
     eyebrow: "可玩模块",
     title: "浏览器游戏构建与沙盒原型",
-    description: "这里集中展示仓库里当前已经可玩的模块，包括网页 RPG 改编版和几个轻量原型沙盒。",
+    description: "这里集中展示仓库里当前已经可玩的模块，包括小型单机 Demo 和更完整的浏览器原型。",
     back: "返回日志页",
     open: "打开模式",
     modes: {
+      "pokemon-duel": {
+        title: "宝可梦对战小实验",
+        description: "一个带有消耗、护盾和爆发时机的小型单机 1v1 回合战。",
+        tag: "迷你战斗 Demo",
+      },
       "heroes-and-monsters": {
         title: "Heroes & Monsters 网页版",
         description: "把 Java 控制台 RPG 改造成浏览器版本，包含地图探索、商店和回合战斗。",
         tag: "完整可玩改编",
+      },
+      "moba-lane": {
+        title: "MOBA 单线小对局",
+        description: "一个围绕补刀、回城、小龙和推塔节奏的单线单机 Demo。",
+        tag: "迷你宏观 Demo",
       },
       "moba-sandbox": {
         title: "MOBA 复盘沙盒",

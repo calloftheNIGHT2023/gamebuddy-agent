@@ -1,3 +1,5 @@
+"""OpenRouter 客户端，负责可选的大模型增强和工具调用闭环。"""
+
 import json
 from typing import Any
 

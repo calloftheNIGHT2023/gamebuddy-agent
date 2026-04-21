@@ -1,5 +1,6 @@
 "use client";
 
+// 分析表单组件，负责收集问题、状态和截图并调用后端接口。
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import { analyzeScreenshot, analyzeState } from "@/lib/api";

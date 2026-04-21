@@ -1,5 +1,6 @@
 "use client";
 
+// 复盘页面，负责读取最近一次分析结果并提供多语言切换。
 import Link from "next/link";
 import { useEffect, useState } from "react";
 

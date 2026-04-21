@@ -1,3 +1,5 @@
+"""FastAPI 应用入口，负责组装路由、中间件和基础元数据。"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

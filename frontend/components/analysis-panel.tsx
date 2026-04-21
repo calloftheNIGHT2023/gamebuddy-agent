@@ -1,5 +1,6 @@
 "use client";
 
+// 分析结果面板，用于展示总结、方向判断和复盘信息。
 import Link from "next/link";
 
 import { translations } from "@/lib/content";

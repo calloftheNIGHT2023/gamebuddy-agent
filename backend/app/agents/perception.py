@@ -1,3 +1,5 @@
+"""感知 agent，负责把输入状态或截图占位数据转成统一结构。"""
+
 from pathlib import Path
 
 from app.models.schemas import BattleState, PerceptionResult

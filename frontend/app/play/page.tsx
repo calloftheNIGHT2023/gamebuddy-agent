@@ -1,5 +1,6 @@
 "use client";
 
+// 可玩 demo 导航页，用于展示所有单机实验模式入口。
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -8,7 +9,9 @@ import { playHubContent, translations } from "@/lib/content";
 import type { Locale } from "@/lib/types";
 
 const modes = [
+  { href: "/play/pokemon-duel", key: "pokemon-duel" },
   { href: "/play/heroes-and-monsters", key: "heroes-and-monsters" },
+  { href: "/play/moba-lane", key: "moba-lane" },
   { href: "/play/moba-sandbox", key: "moba-sandbox" },
   { href: "/play/rpg-build-lab", key: "rpg-build-lab" },
   { href: "/play/survivor-sandbox", key: "survivor-sandbox" },

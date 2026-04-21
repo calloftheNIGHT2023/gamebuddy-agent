@@ -1,3 +1,5 @@
+"""后端共享数据模型，统一约束请求、响应和工具调用结构。"""
+
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field

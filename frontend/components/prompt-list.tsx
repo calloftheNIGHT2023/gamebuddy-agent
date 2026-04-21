@@ -1,3 +1,4 @@
+// 示例提示词列表，帮助用户快速理解支持的提问方式。
 type Props = {
   title: string;
   prompts: string[];

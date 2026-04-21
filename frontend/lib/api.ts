@@ -1,3 +1,4 @@
+// 前端 API 封装层，统一处理分析、画像和历史记录请求。
 import { AnalysisHistoryItem, AnalysisResponse, GameKey, GameState, UserProfile } from "@/lib/types";
 
 function resolveApiBase() {

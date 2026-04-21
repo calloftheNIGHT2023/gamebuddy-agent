@@ -1,3 +1,4 @@
+// 前后端共享的前端类型定义。
 export type Locale = "en" | "zh";
 
 export type GameKey = "pokemon-battle-demo" | "moba-postmatch-demo" | "rpg-build-demo";

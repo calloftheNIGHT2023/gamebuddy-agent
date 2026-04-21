@@ -1,5 +1,6 @@
 "use client";
 
+// 英雄与怪物 demo，包含棋盘探索、战斗和商店的轻量循环。
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 

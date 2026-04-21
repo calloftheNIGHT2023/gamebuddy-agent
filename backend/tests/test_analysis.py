@@ -1,3 +1,5 @@
+"""后端分析链路测试，覆盖健康检查、分析接口和记忆能力。"""
+
 import json
 from pathlib import Path
 

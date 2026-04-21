@@ -1,3 +1,4 @@
+// 首页服务端组件，负责读取样例状态并把数据交给客户端主页。
 import { readFileSync } from "fs";
 import path from "path";
 

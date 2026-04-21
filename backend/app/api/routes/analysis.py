@@ -1,3 +1,5 @@
+"""分析路由，只负责解析请求并转交编排层执行。"""
+
 import json
 
 from fastapi import APIRouter, File, Form, UploadFile

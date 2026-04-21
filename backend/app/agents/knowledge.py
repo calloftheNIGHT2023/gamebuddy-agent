@@ -1,3 +1,5 @@
+"""知识 agent，负责从本地知识包拼装分析上下文。"""
+
 import json
 from pathlib import Path
 from typing import Any

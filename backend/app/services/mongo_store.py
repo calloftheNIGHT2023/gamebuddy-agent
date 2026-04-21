@@ -1,3 +1,5 @@
+"""MongoDB 存储层，负责画像和分析历史的持久化。"""
+
 from datetime import UTC, datetime
 from typing import Any
 

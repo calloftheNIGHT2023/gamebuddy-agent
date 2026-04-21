@@ -1,3 +1,5 @@
+"""编排层，负责串联感知、规则分析、模型增强和持久化。"""
+
 from app.models.schemas import AnalysisResponse, SupportedGame, UserProfile
 from app.services.game_packs import analyze_game, build_json_perception, build_screenshot_perception
 from app.services.mongo_store import mongo_store

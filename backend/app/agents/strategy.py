@@ -1,3 +1,5 @@
+"""策略 agent，根据状态和知识上下文生成启发式建议。"""
+
 from app.models.schemas import BattleState, TacticalAdviceItem
 
 

@@ -1,3 +1,5 @@
+"""记忆相关路由，封装画像和历史记录的读写接口。"""
+
 from fastapi import APIRouter, Query
 
 from app.models.schemas import AnalysisHistoryItem, UserProfile, UserProfileUpsertRequest

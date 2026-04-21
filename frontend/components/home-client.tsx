@@ -1,5 +1,6 @@
 "use client";
 
+// 首页客户端容器，负责串联表单、结果面板和记忆面板。
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";

@@ -1,5 +1,6 @@
 "use client";
 
+// RPG 配装实验室，通过本地状态变化演示构筑方向调整。
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 

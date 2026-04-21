@@ -1,5 +1,6 @@
 "use client";
 
+// 复盘客户端组件，负责从本地缓存恢复分析结果并渲染详情。
 import Link from "next/link";
 import { useEffect, useState } from "react";
 

@@ -1,3 +1,5 @@
+"""集中管理后端配置，统一处理环境变量和默认值。"""
+
 from functools import lru_cache
 
 from pydantic import Field

@@ -1,3 +1,4 @@
+// 前端根布局，统一注入全局样式和页面元信息。
 import "./globals.css";
 
 import type { Metadata } from "next";

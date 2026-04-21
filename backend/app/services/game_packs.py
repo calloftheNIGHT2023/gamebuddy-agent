@@ -1,3 +1,5 @@
+"""游戏包服务，负责把不同游戏的规则分析封装成统一接口。"""
+
 from pathlib import Path
 import json
 from typing import Any

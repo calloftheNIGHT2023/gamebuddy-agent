@@ -1,5 +1,6 @@
 "use client";
 
+// 语言切换器，同时同步 URL 参数和本地存储中的语言偏好。
 import type { Locale } from "@/lib/types";
 
 type Props = {

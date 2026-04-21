@@ -1,5 +1,6 @@
 "use client";
 
+// 轻量 MOBA 沙盒，通过本地状态机模拟资源与目标取舍。
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 

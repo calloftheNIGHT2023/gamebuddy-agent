@@ -1,3 +1,5 @@
+"""工具调用注册表和执行器，供模型在分析过程中访问外部能力。"""
+
 import json
 from dataclasses import dataclass
 from pathlib import Path

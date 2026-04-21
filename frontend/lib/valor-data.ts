@@ -1,3 +1,4 @@
+// 英雄与怪物 demo 的静态模板数据。
 export type ValorHeroClass = "Warrior" | "Sorcerer" | "Paladin";
 export type ValorMonsterKind = "Dragon" | "Exoskeleton" | "Spirit";
 export type ValorItemKind = "weapon" | "armor" | "potion" | "spell";

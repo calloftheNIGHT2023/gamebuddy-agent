@@ -1,5 +1,6 @@
 "use client";
 
+// 记忆面板，用于读写用户画像并展示近期分析历史。
 import { useEffect, useState } from "react";
 
 import { getAnalysisHistory, getUserProfile, saveUserProfile } from "@/lib/api";
