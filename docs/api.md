@@ -7,6 +7,9 @@
 - `GET /health`
 - `POST /api/v1/analyze/state`
 - `POST /api/v1/analyze/screenshot`
+- `GET /api/v1/memory/profile/{user_id}`
+- `POST /api/v1/memory/profile`
+- `GET /api/v1/memory/history`
 
 接口目标是保持简单、稳定、易扩展。
 
@@ -188,3 +191,23 @@
 - 增加“两个动作方案对比”接口
 - 增加多游戏支持
 - 增加会话级复盘接口
+# Function Calling Notes
+
+`POST /api/v1/analyze/state` now accepts two optional fields for function-calling personalization:
+
+```json
+{
+  "session_id": "session-123",
+  "user_profile": {
+    "user_id": "player-7",
+    "skill_level": "beginner",
+    "preferred_style": "concise",
+    "goals": ["safer turn planning"]
+  }
+}
+```
+
+`POST /api/v1/analyze/screenshot` now also accepts:
+
+- `session_id`
+- `user_profile_json` as a JSON string

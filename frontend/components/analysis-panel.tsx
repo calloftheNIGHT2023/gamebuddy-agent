@@ -14,6 +14,7 @@ export function AnalysisPanel({ result, locale }: Props) {
   const t = translations[locale];
 
   if (!result) {
+    // 还没有结果时，展示空状态占位。
     return (
       <div className="rounded-3xl border border-dashed border-ink/20 bg-white/50 p-8 text-sm text-ink/65">
         {t.emptyResult}
@@ -23,12 +24,14 @@ export function AnalysisPanel({ result, locale }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* 顶部摘要区：先给用户一句整体判断，再给初学者解释。 */}
       <div className="rounded-3xl bg-ink p-6 text-white shadow-card">
         <p className="text-xs uppercase tracking-[0.24em] text-gold/80">{t.summary}</p>
         <h3 className="mt-3 text-2xl font-semibold">{result.summary}</h3>
         <p className="mt-4 text-sm text-white/75">{result.beginner_explanation}</p>
       </div>
 
+      {/* 阶段判断区：这是后端的 direction_prediction，可视为“现在最该朝哪个方向处理”。 */}
       <div className="rounded-3xl border border-amber-200/40 bg-[linear-gradient(135deg,#fff8ea_0%,#fffdf6_100%)] p-5 shadow-card">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -52,6 +55,7 @@ export function AnalysisPanel({ result, locale }: Props) {
         </div>
       </div>
 
+      {/* 战术建议列表：逐条渲染后端返回的 tactical_advice。 */}
       <div className="grid gap-4">
         {result.tactical_advice.map((item) => (
           <article key={item.title} className="rounded-3xl border border-ink/10 bg-white p-5 shadow-card">
@@ -67,6 +71,7 @@ export function AnalysisPanel({ result, locale }: Props) {
         ))}
       </div>
 
+      {/* 风险与下一步：把“不确定性”和“可执行动作”并排展示，便于用户快速消化。 */}
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-3xl border border-ink/10 bg-white p-5 shadow-card">
           <h4 className="text-lg font-semibold text-ink">{t.risks}</h4>
@@ -86,6 +91,7 @@ export function AnalysisPanel({ result, locale }: Props) {
         </section>
       </div>
 
+      {/* 跳转到 review 页面，查看更偏复盘视角的完整内容。 */}
       <Link
         href={`/review?lang=${locale}`}
         className="inline-flex rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"

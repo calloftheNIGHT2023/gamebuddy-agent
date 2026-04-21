@@ -2,9 +2,11 @@ from pathlib import Path
 import json
 from typing import Any
 
-from app.models.schemas import AnalysisResponse, DirectionPrediction, PerceptionResult, ReviewSection, SupportedGame, TacticalAdviceItem
+from app.models.schemas import AnalysisResponse, DirectionPrediction, PerceptionResult, ReviewSection, SupportedGame, TacticalAdviceItem, UserProfile
 from app.services.openrouter_client import maybe_enhance_analysis
 
+# 当前后端支持的游戏分析“包”。
+# 这里的 game 值既用于前端选择器，也用于后端分发具体分析函数。
 SUPPORTED_GAMES: tuple[SupportedGame, ...] = (
     "pokemon-battle-demo",
     "moba-postmatch-demo",
@@ -13,6 +15,9 @@ SUPPORTED_GAMES: tuple[SupportedGame, ...] = (
 
 
 def _sample_state(game: SupportedGame) -> dict[str, Any]:
+    # 读取项目内置的样例状态。
+    # 这主要给截图占位分析使用：当前还没有真实视觉识别能力，
+    # 所以用不同游戏的 demo 状态来模拟“感知后的结果”。
     root = Path(__file__).resolve().parents[3] / "samples" / "game-states"
     filename = {
         "pokemon-battle-demo": "balanced-position.json",
@@ -23,11 +28,15 @@ def _sample_state(game: SupportedGame) -> dict[str, Any]:
 
 
 def build_screenshot_perception(game: SupportedGame, filename: str | None) -> PerceptionResult:
+    # 构造“截图输入”的感知结果。
+    # 注意：这里并不会真的解析图片，
+    # 而是显式告诉调用方：当前截图路径是轻量占位实现。
     notes = [
         "Screenshot mode is intentionally lightweight in the MVP.",
         "Visual parsing is mocked with a game-specific sample state.",
     ]
     if filename:
+        # 记录上传的文件名，便于回显和调试。
         notes.append(f"Uploaded file received: {filename}")
     return PerceptionResult(
         source="screenshot",
@@ -39,6 +48,9 @@ def build_screenshot_perception(game: SupportedGame, filename: str | None) -> Pe
 
 
 def build_json_perception(game: SupportedGame, state: dict[str, Any]) -> PerceptionResult:
+    # 构造“结构化 JSON 输入”的感知结果。
+    # 这种输入是当前项目最完整、最可靠的输入方式，
+    # 因为前端已经把状态组织成可直接分析的数据结构。
     return PerceptionResult(
         source="json",
         game=game,
@@ -48,22 +60,45 @@ def build_json_perception(game: SupportedGame, state: dict[str, Any]) -> Percept
     )
 
 
-def analyze_game(perception: PerceptionResult, question: str) -> AnalysisResponse:
+def analyze_game(
+    perception: PerceptionResult,
+    question: str,
+    user_profile: UserProfile | None = None,
+    session_id: str | None = None,
+) -> AnalysisResponse:
+    # 这里是统一分发入口：
+    # 根据 perception.game 选择对应的游戏分析函数。
     handlers = {
         "pokemon-battle-demo": _analyze_pokemon,
         "moba-postmatch-demo": _analyze_moba,
         "rpg-build-demo": _analyze_rpg,
     }
+
+    # 先得到本地规则系统生成的启发式结果。
+    # 这一步不依赖远端模型，保证项目在离线或无 API Key 情况下也能工作。
     heuristic = handlers[perception.game](perception, question)
+
+    # 如果配置了 OpenRouter，再把本地结果作为“草稿”交给大模型润色增强。
+    # 如果没配置，或者远端失败，会直接返回 heuristic，不影响主流程可用性。
     return maybe_enhance_analysis(
         game=perception.game,
         question=question,
         extracted_state=perception.extracted_state,
         heuristic=heuristic,
+        user_profile=user_profile,
+        session_id=session_id,
     )
 
 
 def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisResponse:
+    # 宝可梦回合制 demo 的核心规则逻辑。
+    # 思路不是“通用搜索”，而是读取关键状态字段后，
+    # 用一组清晰的 if/else 规则拼出：
+    # - 战局摘要
+    # - 阶段判断
+    # - 战术建议
+    # - 风险项
+    # - 复盘报告
     state = perception.extracted_state
     player = state["player"]["active"]
     opponent = state["opponent"]["active"]
@@ -73,6 +108,8 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
     risks: list[str] = []
     next_steps: list[str] = []
 
+    # 规则 1：如果己方当前上场单位血量已经很低，
+    # 说明这枚关键子容易被白白换掉，需要优先强调“保核心”。
     if player["current_hp_percent"] <= 40:
         advice.append(
             TacticalAdviceItem(
@@ -84,6 +121,8 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
         )
         next_steps.append("Find the safest pivot that keeps your cleaner alive.")
 
+    # 规则 2：如果对方场上有撒钉，
+    # 则换人会额外付出血量成本，所以不应该随意来回切换。
     if "stealth-rock" in state["opponent"]["hazards"]:
         advice.append(
             TacticalAdviceItem(
@@ -94,6 +133,8 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
             )
         )
 
+    # 规则 3：如果当前节奏是落后，
+    # 说明不该继续靠赌博式预测来抢局面，而应先稳住信息与资源。
     if momentum == "behind":
         advice.append(
             TacticalAdviceItem(
@@ -105,6 +146,8 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
         )
         next_steps.append("Choose the line that reduces how many threats beat you next turn.")
 
+    # 如果前面的条件都没触发，说明局面没有明显崩坏，
+    # 那么默认建议就是“稳健兑现优势”，而不是过度预判。
     if not advice:
         advice.append(
             TacticalAdviceItem(
@@ -115,16 +158,26 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
             )
         )
 
+    # 风险项用于提醒用户：结论并不是 100% 全知的。
+    # 它承认当前局面里仍然存在速度压制、信息未公开等不确定性。
     if opponent["speed_tier"] == "fast":
         risks.append(f"{opponent['name']} remains an immediate speed threat.")
     if not state.get("revealed_threats"):
         risks.append("Some opposing information is still hidden, so exact planning may change next turn.")
 
+    # 如果状态里已经写了建议的胜利条件提示，就顺手转成行动建议。
     if state.get("win_condition_hint"):
         next_steps.append(f"Play toward this win condition: {state['win_condition_hint']}")
+
+    # 用户问题本身也会影响输出重点。
+    # 例如他问的是“是不是我哪一步失误了”，
+    # 那就多补一条偏复盘取向的提醒。
     if "mistake" in question.lower():
         next_steps.append("Review whether you exposed your cleaner too early before scouting speed control.")
 
+    # direction_prediction 是项目里比较核心的一块输出：
+    # 它不是单条建议，而是把当前局面抽象成“所处阶段 + 最优方向 + 现在为什么这么做”。
+    # 这里把“落后且残血”的局面定义为防守稳定阶段。
     if momentum == "behind" and player["current_hp_percent"] <= 40:
         direction_prediction = DirectionPrediction(
             current_phase="Defensive stabilization before your late-game cleaner can win",
@@ -142,6 +195,10 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
             confidence="medium",
         )
 
+    # review_report 是“教练式复盘视角”。
+    # 它与 tactical_advice 的区别在于：
+    # tactical_advice 更像“这一步怎么走”
+    # review_report 更像“这局为什么容易走偏，以后怎么练”
     review = ReviewSection(
         current_situation=f"Turn {turn}: {player['name']} is facing {opponent['name']} with momentum {momentum}.",
         likely_mistakes=[
@@ -158,6 +215,9 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
             "Review when a safe switch would have preserved more endgame value.",
         ],
     )
+
+    # 最后把不同维度的信息打包成统一响应结构。
+    # 前端只需要认识 AnalysisResponse，不需要知道内部用了哪些规则。
     return AnalysisResponse(
         summary=f"GameBuddy sees a {momentum} tempo position on turn {turn}. Protect your key piece and avoid unnecessary risk.",
         direction_prediction=direction_prediction,
@@ -171,6 +231,8 @@ def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisRes
 
 
 def _analyze_moba(perception: PerceptionResult, question: str) -> AnalysisResponse:
+    # MOBA demo 的规则逻辑更偏“宏观运营”：
+    # 重点看资源差、时间点、下一波地图目标，以及你是不是在错误的时机接团。
     state = perception.extracted_state
     role = state["player_role"]
     champion = state["champion"]
@@ -178,6 +240,8 @@ def _analyze_moba(perception: PerceptionResult, question: str) -> AnalysisRespon
     gold_diff = state["team_gold_diff"]
     objective = state["next_objective"]
 
+    # 这里直接构造 3 条主建议，
+    # 因为这个 demo 更像赛后复盘而不是逐回合应手。
     advice = [
         TacticalAdviceItem(
             title="Play for the next objective window",
@@ -199,17 +263,22 @@ def _analyze_moba(perception: PerceptionResult, question: str) -> AnalysisRespon
         ),
     ]
 
+    # 风险项强调的是当前地图态势里最值得警惕的两个变量：
+    # 经济差和敌方核心威胁点。
     risks = [
         f"Current team gold difference is {gold_diff}, so forcing low-information fights is risky.",
         f"The enemy carry threat identified in this snapshot is {state['enemy_carry_threat']}.",
     ]
 
+    # next_steps 给的是用户做复盘或下次对局时可执行的检查清单。
     next_steps = [
         f"Sync vision, lane priority, and cooldown tracking before the next {objective} fight.",
         "Review the last two deaths and ask whether they happened before your team was actually in range.",
         "Ping your intended timing earlier so teammates can arrive on the same page.",
     ]
 
+    # 如果时间已经进入中期且经济没有崩盘，
+    # 就可以更有信心地把局势定义为“目标物前置布置窗口”。
     setup_confidence = "high" if gold_diff >= -2500 and game_time >= 14 else "medium"
     direction_prediction = DirectionPrediction(
         current_phase=f"Mid-game pre-{objective} setup window",
@@ -250,6 +319,8 @@ def _analyze_moba(perception: PerceptionResult, question: str) -> AnalysisRespon
 
 
 def _analyze_rpg(perception: PerceptionResult, question: str) -> AnalysisResponse:
+    # RPG build demo 的分析重心不是单回合操作，
+    # 而是“构筑是否聚焦、资源是否被摊薄、当前卡点是否被正确识别”。
     state = perception.extracted_state
     build_focus = state["build_focus"]
     character = state["character_name"]
@@ -259,6 +330,8 @@ def _analyze_rpg(perception: PerceptionResult, question: str) -> AnalysisRespons
     mana_regen = state["core_stats"]["mana_regen"]
     vitality = state["core_stats"]["vitality"]
 
+    # 这三条建议围绕一个主线：
+    # 先收窄 build，先修瓶颈，再对准目标内容调配资源。
     advice = [
         TacticalAdviceItem(
             title="Commit to one build direction",
@@ -291,6 +364,9 @@ def _analyze_rpg(perception: PerceptionResult, question: str) -> AnalysisRespons
         "Compare your current itemization against the minimum thresholds your goal actually demands.",
     ]
 
+    # 这里用法力回复和体力两个指标做一个简单阈值判断：
+    # 如果基础生存/续航还没过线，就说明当前问题不是“后期极限优化”，
+    # 而是更前置的“先把打不过的卡点补平”。
     if mana_regen <= 18 or vitality <= 26:
         direction_prediction = DirectionPrediction(
             current_phase="Pre-boss bottleneck-fixing stage",

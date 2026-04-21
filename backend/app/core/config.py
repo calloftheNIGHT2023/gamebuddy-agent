@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     openrouter_base_url: str = Field(default="https://openrouter.ai/api/v1", alias="OPENROUTER_BASE_URL")
     openrouter_site_url: str = Field(default="http://localhost:3002", alias="OPENROUTER_SITE_URL")
     openrouter_app_name: str = Field(default="GameBuddy Agent", alias="OPENROUTER_APP_NAME")
+    mongodb_uri: str | None = Field(default=None, alias="MONGODB_URI")
+    mongodb_database: str = Field(default="gamebuddy", alias="MONGODB_DATABASE")
+    mongodb_user_profiles_collection: str = Field(default="user_profiles", alias="MONGODB_USER_PROFILES_COLLECTION")
+    mongodb_analysis_history_collection: str = Field(default="analysis_history", alias="MONGODB_ANALYSIS_HISTORY_COLLECTION")
 
     @property
     def cors_origins(self) -> list[str]:
@@ -25,6 +29,10 @@ class Settings(BaseSettings):
     @property
     def has_openrouter(self) -> bool:
         return bool(self.openrouter_api_key)
+
+    @property
+    def has_mongodb(self) -> bool:
+        return bool(self.mongodb_uri)
 
 
 @lru_cache

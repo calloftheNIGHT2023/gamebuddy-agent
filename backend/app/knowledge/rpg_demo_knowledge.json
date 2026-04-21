@@ -1,0 +1,18 @@
+{
+  "game": "rpg-build-demo",
+  "glossary": {
+    "build identity": "The core plan your stats, gear, and upgrades are all supporting.",
+    "bottleneck": "The main weakness currently preventing progression, such as mana sustain or survivability.",
+    "threshold": "The minimum stat level needed for a build to feel stable in the target content."
+  },
+  "build_principles": [
+    "A focused build usually outperforms a broad build in progression content.",
+    "Fixing the weakest slot often gives a larger upgrade than chasing an expensive perfect item.",
+    "Match your stat priorities to the exact content you want to clear next."
+  ],
+  "stat_focus": {
+    "mana_regen": "Low mana stability often causes failed boss attempts before raw damage becomes the real issue.",
+    "vitality": "Survivability thresholds reduce reset pressure and make damage windows easier to use.",
+    "spell_power": "Damage scaling is valuable only after the build can survive and sustain long enough to use it."
+  }
+}

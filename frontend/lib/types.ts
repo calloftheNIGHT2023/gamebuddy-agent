@@ -30,3 +30,26 @@ export type AnalysisResponse = {
   };
   metadata: Record<string, string | number>;
 };
+
+export type UserProfile = {
+  user_id: string;
+  display_name?: string | null;
+  skill_level?: "beginner" | "intermediate" | "advanced" | null;
+  preferred_style?: "concise" | "balanced" | "detailed" | null;
+  favorite_role?: string | null;
+  favorite_character?: string | null;
+  goals: string[];
+  notes: string[];
+};
+
+export type AnalysisHistoryItem = {
+  game: GameKey;
+  question: string;
+  session_id: string | null;
+  user_id: string | null;
+  source: "json" | "screenshot";
+  user_profile: UserProfile | null;
+  extracted_state: GameState;
+  response: AnalysisResponse;
+  created_at: string;
+};

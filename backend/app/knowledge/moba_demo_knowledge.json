@@ -1,0 +1,27 @@
+{
+  "game": "moba-postmatch-demo",
+  "glossary": {
+    "setup window": "The period before an objective where wave priority, recalls, and vision should be aligned.",
+    "face-check": "Entering fog of war without confirmed backup or information.",
+    "tempo reset": "Giving up pressure to recall, regroup, and arrive on the map in sync."
+  },
+  "macro_principles": [
+    "Objective fights are usually decided by setup quality before they are decided by mechanics.",
+    "A late rotation often costs more than one missed wave or camp.",
+    "Deaths in transition between lanes and objectives create map control loss, not just scoreboard loss."
+  ],
+  "role_tips": {
+    "carry": [
+      "Position around vision already secured by teammates.",
+      "Arrive early enough to hit waves before the objective spawns."
+    ],
+    "support": [
+      "Treat vision as a setup tool, not a solo mission.",
+      "Do not walk into river first if collapse timings are unclear."
+    ],
+    "jungler": [
+      "Path with objective timing in mind rather than squeezing one more camp.",
+      "Track whether your lane states let you enter river first."
+    ]
+  }
+}

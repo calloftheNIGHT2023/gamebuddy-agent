@@ -4,17 +4,19 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import { analyzeScreenshot, analyzeState } from "@/lib/api";
 import { gameOptions, promptSets, translations } from "@/lib/content";
-import type { AnalysisResponse, GameKey, GameState, Locale } from "@/lib/types";
+import type { AnalysisResponse, GameKey, GameState, Locale, UserProfile } from "@/lib/types";
 
 type Props = {
   locale: Locale;
   game: GameKey;
   samples: Record<GameKey, string>;
+  sessionId: string;
+  userProfile: UserProfile;
   onGameChange: (game: GameKey) => void;
   onResult: (result: AnalysisResponse) => void;
 };
 
-export function StateForm({ locale, game, samples, onGameChange, onResult }: Props) {
+export function StateForm({ locale, game, samples, sessionId, userProfile, onGameChange, onResult }: Props) {
   const t = translations[locale];
   const [question, setQuestion] = useState(promptSets[game][locale][0]);
   const [mode, setMode] = useState<"json" | "screenshot">("json");
@@ -38,12 +40,12 @@ export function StateForm({ locale, game, samples, onGameChange, onResult }: Pro
 
       if (mode === "json") {
         const parsed = JSON.parse(jsonText) as GameState;
-        result = await analyzeState(game, question, parsed);
+        result = await analyzeState(game, question, parsed, { sessionId, userProfile });
       } else {
         if (!file) {
           throw new Error(t.chooseFile);
         }
-        result = await analyzeScreenshot(game, question, file);
+        result = await analyzeScreenshot(game, question, file, { sessionId, userProfile });
       }
 
       window.localStorage.setItem("gamebuddy:last-result", JSON.stringify(result));

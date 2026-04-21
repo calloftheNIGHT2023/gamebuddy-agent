@@ -6,20 +6,41 @@ import { useEffect, useState } from "react";
 
 import { AnalysisPanel } from "@/components/analysis-panel";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { MemoryPanel } from "@/components/memory-panel";
 import { PromptList } from "@/components/prompt-list";
 import { StateForm } from "@/components/state-form";
 import { promptSets, translations } from "@/lib/content";
-import type { AnalysisResponse, GameKey, Locale } from "@/lib/types";
+import type { AnalysisResponse, GameKey, Locale, UserProfile } from "@/lib/types";
 
 type Props = {
   samples: Record<GameKey, string>;
   initialLocale: Locale;
 };
 
+const DEFAULT_PROFILE: UserProfile = {
+  user_id: "",
+  display_name: null,
+  skill_level: "intermediate",
+  preferred_style: "balanced",
+  favorite_role: null,
+  favorite_character: null,
+  goals: [],
+  notes: [],
+};
+
+function buildSessionId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `session-${Date.now()}`;
+}
+
 export default function HomeClient({ samples, initialLocale }: Props) {
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [game, setGame] = useState<GameKey>("pokemon-battle-demo");
+  const [sessionId, setSessionId] = useState("session-loading");
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -41,6 +62,28 @@ export default function HomeClient({ samples, initialLocale }: Props) {
   useEffect(() => {
     window.localStorage.setItem("gamebuddy:locale", locale);
   }, [locale]);
+
+  useEffect(() => {
+    const storedSessionId = window.localStorage.getItem("gamebuddy:session-id");
+    const nextSessionId = storedSessionId || buildSessionId();
+    window.localStorage.setItem("gamebuddy:session-id", nextSessionId);
+    setSessionId(nextSessionId);
+
+    const storedProfile = window.localStorage.getItem("gamebuddy:user-profile");
+    if (!storedProfile) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(storedProfile) as UserProfile;
+      setUserProfile({ ...DEFAULT_PROFILE, ...parsed, goals: parsed.goals ?? [], notes: parsed.notes ?? [] });
+    } catch {
+      setUserProfile(DEFAULT_PROFILE);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("gamebuddy:user-profile", JSON.stringify(userProfile));
+  }, [userProfile]);
 
   const t = translations[locale];
 
@@ -105,8 +148,20 @@ export default function HomeClient({ samples, initialLocale }: Props) {
       </section>
 
       <section className="mx-auto mt-10 grid max-w-7xl gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-        <StateForm locale={locale} game={game} samples={samples} onGameChange={setGame} onResult={setResult} />
+        <StateForm
+          locale={locale}
+          game={game}
+          samples={samples}
+          sessionId={sessionId}
+          userProfile={userProfile}
+          onGameChange={setGame}
+          onResult={setResult}
+        />
         <AnalysisPanel result={result} locale={locale} />
+      </section>
+
+      <section className="mx-auto mt-10 max-w-7xl">
+        <MemoryPanel locale={locale} profile={userProfile} sessionId={sessionId} onProfileChange={setUserProfile} />
       </section>
     </main>
   );
