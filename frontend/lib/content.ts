@@ -172,8 +172,8 @@ export const playHubContent = {
       },
       "moba-lane": {
         title: "MOBA Lane Mini Match",
-        description: "A single-lane solo demo focused on farming, recalls, dragon timing, and tower pressure.",
-        tag: "Mini macro demo",
+        description: "A single-lane action demo with movement, skill buttons, dragon timing, and tower pressure.",
+        tag: "Mini action demo",
       },
       "moba-sandbox": {
         title: "MOBA Review Sandbox",
@@ -211,8 +211,8 @@ export const playHubContent = {
       },
       "moba-lane": {
         title: "MOBA 单线小对局",
-        description: "一个围绕补刀、回城、小龙和推塔节奏的单线单机 Demo。",
-        tag: "迷你宏观 Demo",
+        description: "一个带走位、技能释放、小龙时机和推塔节奏的单线单机 Demo。",
+        tag: "迷你操作 Demo",
       },
       "moba-sandbox": {
         title: "MOBA 复盘沙盒",
