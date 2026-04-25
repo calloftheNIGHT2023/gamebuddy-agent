@@ -2,10 +2,11 @@
 
 ## MongoDB Persistence
 
-MongoDB support is optional and is used for two persistence paths:
+MongoDB support is optional and is used for three persistence paths:
 
 - user profile storage and profile merge by `user_id`
 - analysis history storage for each request
+- feedback storage for later SFT / preference-data export
 
 Environment variables:
 
@@ -14,6 +15,7 @@ MONGODB_URI=
 MONGODB_DATABASE=gamebuddy
 MONGODB_USER_PROFILES_COLLECTION=user_profiles
 MONGODB_ANALYSIS_HISTORY_COLLECTION=analysis_history
+MONGODB_FEEDBACK_COLLECTION=feedback
 ```
 
 GameBuddy Agent is a browser-based game analysis lab. It combines structured review demos with playable sandbox modules, then turns a game state or screenshot placeholder input into:

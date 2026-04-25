@@ -1,0 +1,99 @@
+{
+  "summary": {
+    "before": {
+      "accuracy": 0.2381,
+      "schema_completeness": 1.0,
+      "actionability": 0.5,
+      "uncertainty_disclosure": 0.3333,
+      "personalization": 0.0833,
+      "interaction_experience": 0.4791,
+      "overall": 0.3345
+    },
+    "after": {
+      "accuracy": 0.9047,
+      "schema_completeness": 1.0,
+      "actionability": 1.0,
+      "uncertainty_disclosure": 0.8889,
+      "personalization": 0.8889,
+      "interaction_experience": 0.9445,
+      "overall": 0.9207
+    },
+    "delta_percent": {
+      "accuracy": 280.0,
+      "schema_completeness": 0.0,
+      "actionability": 100.0,
+      "uncertainty_disclosure": 166.7,
+      "personalization": 967.1,
+      "interaction_experience": 97.1,
+      "overall": 175.2
+    }
+  },
+  "cases": [
+    {
+      "name": "pokemon_defensive_stabilization",
+      "game": "pokemon-battle-demo",
+      "before": {
+        "accuracy": 0.1429,
+        "schema_completeness": 1.0,
+        "actionability": 0.5,
+        "uncertainty_disclosure": 0.3333,
+        "personalization": 0.25,
+        "interaction_experience": 0.5208,
+        "overall": 0.294
+      },
+      "after": {
+        "accuracy": 0.8571,
+        "schema_completeness": 1.0,
+        "actionability": 1.0,
+        "uncertainty_disclosure": 0.6667,
+        "personalization": 1.0,
+        "interaction_experience": 0.9167,
+        "overall": 0.881
+      }
+    },
+    {
+      "name": "moba_objective_setup",
+      "game": "moba-postmatch-demo",
+      "before": {
+        "accuracy": 0.2857,
+        "schema_completeness": 1.0,
+        "actionability": 0.5,
+        "uncertainty_disclosure": 0.3333,
+        "personalization": 0.0,
+        "interaction_experience": 0.4583,
+        "overall": 0.3548
+      },
+      "after": {
+        "accuracy": 1.0,
+        "schema_completeness": 1.0,
+        "actionability": 1.0,
+        "uncertainty_disclosure": 1.0,
+        "personalization": 0.6667,
+        "interaction_experience": 0.9167,
+        "overall": 0.9667
+      }
+    },
+    {
+      "name": "rpg_build_bottleneck",
+      "game": "rpg-build-demo",
+      "before": {
+        "accuracy": 0.2857,
+        "schema_completeness": 1.0,
+        "actionability": 0.5,
+        "uncertainty_disclosure": 0.3333,
+        "personalization": 0.0,
+        "interaction_experience": 0.4583,
+        "overall": 0.3548
+      },
+      "after": {
+        "accuracy": 0.8571,
+        "schema_completeness": 1.0,
+        "actionability": 1.0,
+        "uncertainty_disclosure": 1.0,
+        "personalization": 1.0,
+        "interaction_experience": 1.0,
+        "overall": 0.9143
+      }
+    }
+  ]
+}

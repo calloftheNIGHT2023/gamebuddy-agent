@@ -10,6 +10,9 @@
 - `GET /api/v1/memory/profile/{user_id}`
 - `POST /api/v1/memory/profile`
 - `GET /api/v1/memory/history`
+- `POST /api/v1/memory/feedback`
+- `GET /api/v1/memory/feedback`
+- `GET /api/v1/memory/training-samples`
 
 接口目标是保持简单、稳定、易扩展。
 
@@ -211,3 +214,27 @@
 
 - `session_id`
 - `user_profile_json` as a JSON string
+
+## Feedback and Training Data Loop
+
+`POST /api/v1/memory/feedback` records user feedback for one generated answer:
+
+```json
+{
+  "game": "pokemon-battle-demo",
+  "question": "What should I do next?",
+  "response": {},
+  "rating": "down",
+  "session_id": "session-123",
+  "user_id": "player-7",
+  "correction": "Explain the safer pivot first.",
+  "tags": ["user-correction"]
+}
+```
+
+`GET /api/v1/memory/training-samples` converts saved feedback into lightweight training records:
+
+- `rating=up` becomes an SFT-style sample with the accepted answer as `target`.
+- `rating=down` with `correction` becomes a preference-style sample with `chosen` and `rejected` fields.
+
+This endpoint is intended as an export bridge for later SFT, DPO, RLHF, or offline evaluation pipelines. It does not fine-tune a model inside the web service.

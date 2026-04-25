@@ -219,3 +219,87 @@ def test_memory_history_route_uses_store(monkeypatch) -> None:
     assert len(body) == 1
     assert body[0]["user_id"] == "player-2"
     assert body[0]["session_id"] == "session-2"
+
+
+def test_feedback_route_returns_training_record(monkeypatch) -> None:
+    sample_response = client.post(
+        "/api/v1/analyze/state",
+        json={
+            "game": "pokemon-battle-demo",
+            "question": "What should I do next?",
+            "state": load_sample("balanced-position.json"),
+        },
+    ).json()
+
+    captured = {"payload": None}
+
+    def fake_save_feedback(payload):
+        captured["payload"] = payload
+        return {
+            **payload.model_dump(),
+            "created_at": "2026-04-22T12:00:00+00:00",
+        }
+
+    monkeypatch.setattr(mongo_store, "save_feedback", fake_save_feedback)
+    response = client.post(
+        "/api/v1/memory/feedback",
+        json={
+            "game": "pokemon-battle-demo",
+            "question": "What should I do next?",
+            "response": sample_response,
+            "rating": "down",
+            "session_id": "session-feedback",
+            "user_id": "player-feedback",
+            "correction": "Explain the safer pivot first.",
+            "tags": ["user-correction"],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["rating"] == "down"
+    assert body["correction"] == "Explain the safer pivot first."
+    assert captured["payload"].session_id == "session-feedback"
+
+
+def test_training_samples_route_uses_feedback_export(monkeypatch) -> None:
+    sample_response = client.post(
+        "/api/v1/analyze/state",
+        json={
+            "game": "pokemon-battle-demo",
+            "question": "What should I do next?",
+            "state": load_sample("balanced-position.json"),
+        },
+    ).json()
+
+    def fake_export(*, user_id, session_id, limit):
+        assert user_id == "player-feedback"
+        assert session_id == "session-feedback"
+        assert limit == 3
+        return [
+            {
+                "sample_type": "sft",
+                "prompt": {
+                    "game": "pokemon-battle-demo",
+                    "question": "What should I do next?",
+                    "session_id": session_id,
+                },
+                "target": sample_response,
+                "metadata": {
+                    "user_id": user_id,
+                    "rating": "up",
+                    "tags": [],
+                    "created_at": "2026-04-22T12:00:00+00:00",
+                    "source": "gamebuddy_feedback",
+                },
+            }
+        ]
+
+    monkeypatch.setattr(mongo_store, "export_training_samples", fake_export)
+    response = client.get(
+        "/api/v1/memory/training-samples",
+        params={"user_id": "player-feedback", "session_id": "session-feedback", "limit": 3},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["sample_type"] == "sft"
+    assert body[0]["metadata"]["source"] == "gamebuddy_feedback"

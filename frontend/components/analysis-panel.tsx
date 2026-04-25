@@ -2,17 +2,52 @@
 
 // 分析结果面板，用于展示总结、方向判断和复盘信息。
 import Link from "next/link";
+import { useState } from "react";
 
+import { saveFeedback } from "@/lib/api";
 import { translations } from "@/lib/content";
-import type { AnalysisResponse, Locale } from "@/lib/types";
+import type { AnalysisResponse, FeedbackRating, Locale, UserProfile } from "@/lib/types";
 
 type Props = {
   result: AnalysisResponse | null;
   locale: Locale;
+  sessionId: string;
+  userProfile: UserProfile;
 };
 
-export function AnalysisPanel({ result, locale }: Props) {
+export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props) {
   const t = translations[locale];
+  const [correction, setCorrection] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<string | null>(null);
+  const [savingFeedback, setSavingFeedback] = useState(false);
+
+  async function handleFeedback(rating: FeedbackRating) {
+    if (!result) {
+      return;
+    }
+    const game = String(result.metadata.game ?? "pokemon-battle-demo") as "pokemon-battle-demo" | "moba-postmatch-demo" | "rpg-build-demo";
+    const question = String(result.metadata.question ?? "");
+    setSavingFeedback(true);
+    setFeedbackStatus(null);
+    try {
+      await saveFeedback({
+        game,
+        question,
+        response: result,
+        rating,
+        session_id: sessionId,
+        user_id: userProfile.user_id || undefined,
+        user_profile: userProfile.user_id ? userProfile : null,
+        correction: correction.trim() || null,
+        tags: correction.trim() ? ["user-correction"] : [],
+      });
+      setFeedbackStatus(locale === "zh" ? "反馈已保存，可用于后续 SFT / 偏好数据整理。" : "Feedback saved for later SFT / preference data export.");
+    } catch {
+      setFeedbackStatus(locale === "zh" ? "反馈保存失败。" : "Failed to save feedback.");
+    } finally {
+      setSavingFeedback(false);
+    }
+  }
 
   if (!result) {
     // 还没有结果时，展示空状态占位。
@@ -99,6 +134,43 @@ export function AnalysisPanel({ result, locale }: Props) {
       >
         {t.openReview}
       </Link>
+
+      <section className="rounded-3xl border border-ink/10 bg-white p-5 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ember">Feedback loop</p>
+            <h4 className="mt-2 text-lg font-semibold text-ink">
+              {locale === "zh" ? "回答质量回溯" : "Response quality feedback"}
+            </h4>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={savingFeedback}
+              onClick={() => handleFeedback("up")}
+              className="rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {locale === "zh" ? "有用" : "Useful"}
+            </button>
+            <button
+              type="button"
+              disabled={savingFeedback}
+              onClick={() => handleFeedback("down")}
+              className="rounded-full bg-mist px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60"
+            >
+              {locale === "zh" ? "需改进" : "Needs work"}
+            </button>
+          </div>
+        </div>
+        <textarea
+          value={correction}
+          onChange={(event) => setCorrection(event.target.value)}
+          rows={3}
+          placeholder={locale === "zh" ? "可选：写下更理想的回答方向或修正意见" : "Optional: describe a better answer or correction"}
+          className="mt-4 w-full rounded-3xl border border-ink/10 bg-mist px-4 py-3 text-sm text-ink outline-none"
+        />
+        {feedbackStatus ? <p className="mt-3 text-sm text-ink/65">{feedbackStatus}</p> : null}
+      </section>
     </div>
   );
 }

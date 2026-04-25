@@ -102,6 +102,42 @@ class AnalysisHistoryItem(BaseModel):
     created_at: str
 
 
+class FeedbackRequest(BaseModel):
+    game: SupportedGame
+    question: str
+    response: AnalysisResponse
+    rating: Literal["up", "down", "neutral"]
+    session_id: str | None = None
+    user_id: str | None = None
+    user_profile: UserProfile | None = None
+    extracted_state: dict[str, Any] | None = None
+    correction: str | None = None
+    tags: list[str] = Field(default_factory=list)
+
+
+class FeedbackItem(BaseModel):
+    game: SupportedGame
+    question: str
+    response: AnalysisResponse
+    rating: Literal["up", "down", "neutral"]
+    session_id: str | None = None
+    user_id: str | None = None
+    user_profile: UserProfile | None = None
+    extracted_state: dict[str, Any] | None = None
+    correction: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    created_at: str
+
+
+class TrainingSample(BaseModel):
+    sample_type: Literal["sft", "preference"]
+    prompt: dict[str, Any]
+    chosen: AnalysisResponse | str | None = None
+    rejected: AnalysisResponse | str | None = None
+    target: AnalysisResponse | str
+    metadata: dict[str, Any]
+
+
 class StateAnalysisRequest(BaseModel):
     # 结构化状态分析接口的请求体。
     # game 和 question 决定分析上下文，

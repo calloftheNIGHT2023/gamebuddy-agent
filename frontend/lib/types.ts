@@ -54,3 +54,22 @@ export type AnalysisHistoryItem = {
   response: AnalysisResponse;
   created_at: string;
 };
+
+export type FeedbackRating = "up" | "down" | "neutral";
+
+export type FeedbackRequest = {
+  game: GameKey;
+  question: string;
+  response: AnalysisResponse;
+  rating: FeedbackRating;
+  session_id?: string;
+  user_id?: string;
+  user_profile?: UserProfile | null;
+  extracted_state?: GameState | null;
+  correction?: string | null;
+  tags?: string[];
+};
+
+export type FeedbackItem = FeedbackRequest & {
+  created_at: string;
+};

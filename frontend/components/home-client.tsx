@@ -158,7 +158,7 @@ export default function HomeClient({ samples, initialLocale }: Props) {
           onGameChange={setGame}
           onResult={setResult}
         />
-        <AnalysisPanel result={result} locale={locale} />
+        <AnalysisPanel result={result} locale={locale} sessionId={sessionId} userProfile={userProfile} />
       </section>
 
       <section className="mx-auto mt-10 max-w-7xl">

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query
 
-from app.models.schemas import AnalysisHistoryItem, UserProfile, UserProfileUpsertRequest
+from app.models.schemas import AnalysisHistoryItem, FeedbackItem, FeedbackRequest, TrainingSample, UserProfile, UserProfileUpsertRequest
 from app.services.mongo_store import mongo_store
 
 router = APIRouter(tags=["memory"])
@@ -27,3 +27,26 @@ def get_analysis_history(
     limit: int = Query(default=10, ge=1, le=100),
 ) -> list[AnalysisHistoryItem]:
     return mongo_store.list_analysis_history(user_id=user_id, session_id=session_id, limit=limit)
+
+
+@router.post("/memory/feedback", response_model=FeedbackItem)
+def save_feedback(payload: FeedbackRequest) -> FeedbackItem:
+    return mongo_store.save_feedback(payload)
+
+
+@router.get("/memory/feedback", response_model=list[FeedbackItem])
+def get_feedback(
+    user_id: str | None = Query(default=None),
+    session_id: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+) -> list[FeedbackItem]:
+    return mongo_store.list_feedback(user_id=user_id, session_id=session_id, limit=limit)
+
+
+@router.get("/memory/training-samples", response_model=list[TrainingSample])
+def export_training_samples(
+    user_id: str | None = Query(default=None),
+    session_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=500),
+) -> list[TrainingSample]:
+    return mongo_store.export_training_samples(user_id=user_id, session_id=session_id, limit=limit)

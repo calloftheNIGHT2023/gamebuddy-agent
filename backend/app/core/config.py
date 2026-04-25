@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     mongodb_database: str = Field(default="gamebuddy", alias="MONGODB_DATABASE")
     mongodb_user_profiles_collection: str = Field(default="user_profiles", alias="MONGODB_USER_PROFILES_COLLECTION")
     mongodb_analysis_history_collection: str = Field(default="analysis_history", alias="MONGODB_ANALYSIS_HISTORY_COLLECTION")
+    mongodb_feedback_collection: str = Field(default="feedback", alias="MONGODB_FEEDBACK_COLLECTION")
 
     @property
     def cors_origins(self) -> list[str]:

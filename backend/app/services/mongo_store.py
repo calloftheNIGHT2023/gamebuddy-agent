@@ -8,7 +8,7 @@ from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
 
 from app.core.config import settings
-from app.models.schemas import AnalysisHistoryItem, AnalysisResponse, SupportedGame, UserProfile
+from app.models.schemas import AnalysisHistoryItem, AnalysisResponse, FeedbackItem, FeedbackRequest, SupportedGame, TrainingSample, UserProfile
 
 
 class MongoStore:
@@ -127,6 +127,97 @@ class MongoStore:
                 continue
         return normalized
 
+    def save_feedback(self, payload: FeedbackRequest) -> FeedbackItem:
+        document = {
+            **payload.model_dump(),
+            "created_at": datetime.now(UTC),
+        }
+        if self.enabled:
+            try:
+                self._feedback.insert_one(document)
+            except PyMongoError:
+                pass
+
+        normalized = {**document, "created_at": document["created_at"].isoformat()}
+        return FeedbackItem.model_validate(normalized)
+
+    def list_feedback(
+        self,
+        *,
+        user_id: str | None,
+        session_id: str | None,
+        limit: int,
+    ) -> list[FeedbackItem]:
+        if not self.enabled:
+            return []
+
+        query: dict[str, Any] = {}
+        if user_id:
+            query["user_id"] = user_id
+        if session_id:
+            query["session_id"] = session_id
+
+        try:
+            cursor = self._feedback.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
+            items = list(cursor)
+        except PyMongoError:
+            return []
+
+        normalized: list[FeedbackItem] = []
+        for item in items:
+            item["created_at"] = item["created_at"].isoformat()
+            try:
+                normalized.append(FeedbackItem.model_validate(item))
+            except (ValueError, TypeError):
+                continue
+        return normalized
+
+    def export_training_samples(
+        self,
+        *,
+        user_id: str | None,
+        session_id: str | None,
+        limit: int,
+    ) -> list[TrainingSample]:
+        feedback_items = self.list_feedback(user_id=user_id, session_id=session_id, limit=limit)
+        samples: list[TrainingSample] = []
+        for item in feedback_items:
+            prompt = {
+                "game": item.game,
+                "question": item.question,
+                "session_id": item.session_id,
+                "user_profile": item.user_profile.model_dump(exclude_none=True) if item.user_profile else None,
+                "extracted_state": item.extracted_state,
+            }
+            metadata = {
+                "user_id": item.user_id,
+                "rating": item.rating,
+                "tags": item.tags,
+                "created_at": item.created_at,
+                "source": "gamebuddy_feedback",
+            }
+            if item.rating == "down" and item.correction:
+                samples.append(
+                    TrainingSample(
+                        sample_type="preference",
+                        prompt=prompt,
+                        chosen=item.correction,
+                        rejected=item.response,
+                        target=item.correction,
+                        metadata=metadata,
+                    )
+                )
+            else:
+                samples.append(
+                    TrainingSample(
+                        sample_type="sft",
+                        prompt=prompt,
+                        target=item.response,
+                        metadata=metadata,
+                    )
+                )
+        return samples
+
     @property
     def _db(self):
         if self._client is None:
@@ -140,6 +231,10 @@ class MongoStore:
     @property
     def _history(self) -> Collection[Any]:
         return self._db[settings.mongodb_analysis_history_collection]
+
+    @property
+    def _feedback(self) -> Collection[Any]:
+        return self._db[settings.mongodb_feedback_collection]
 
 
 mongo_store = MongoStore()

@@ -1,5 +1,5 @@
 // 前端 API 封装层，统一处理分析、画像和历史记录请求。
-import { AnalysisHistoryItem, AnalysisResponse, GameKey, GameState, UserProfile } from "@/lib/types";
+import { AnalysisHistoryItem, AnalysisResponse, FeedbackItem, FeedbackRequest, GameKey, GameState, UserProfile } from "@/lib/types";
 
 function resolveApiBase() {
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
@@ -127,6 +127,21 @@ export async function getAnalysisHistory(params: {
   const response = await fetch(`${API_BASE}/memory/history${query ? `?${query}` : ""}`);
   if (!response.ok) {
     throw new Error("Failed to load analysis history.");
+  }
+  return response.json();
+}
+
+export async function saveFeedback(payload: FeedbackRequest): Promise<FeedbackItem> {
+  assertApiBase();
+  const response = await fetch(`${API_BASE}/memory/feedback`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to save feedback.");
   }
   return response.json();
 }

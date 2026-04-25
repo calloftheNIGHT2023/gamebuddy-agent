@@ -78,7 +78,7 @@ def analyze_game(
 
     # 先得到本地规则系统生成的启发式结果。
     # 这一步不依赖远端模型，保证项目在离线或无 API Key 情况下也能工作。
-    heuristic = handlers[perception.game](perception, question)
+    heuristic = _apply_profile_hints(handlers[perception.game](perception, question), user_profile)
 
     # 如果配置了 OpenRouter，再把本地结果作为“草稿”交给大模型润色增强。
     # 如果没配置，或者远端失败，会直接返回 heuristic，不影响主流程可用性。
@@ -90,6 +90,42 @@ def analyze_game(
         user_profile=user_profile,
         session_id=session_id,
     )
+
+
+def _apply_profile_hints(response: AnalysisResponse, user_profile: UserProfile | None) -> AnalysisResponse:
+    if user_profile is None:
+        return response
+
+    updated = response.model_copy(deep=True)
+    hints: list[str] = []
+    if user_profile.skill_level == "beginner":
+        updated.beginner_explanation = f"{updated.beginner_explanation} Prioritize the safest repeatable habit before advanced reads."
+        hints.append("beginner")
+    elif user_profile.skill_level == "advanced":
+        updated.beginner_explanation = f"{updated.beginner_explanation} You can review this as a sequencing and resource-conversion problem."
+        hints.append("advanced")
+
+    if user_profile.preferred_style == "concise":
+        updated.next_steps = updated.next_steps[:3]
+        hints.append("concise")
+    elif user_profile.preferred_style == "detailed":
+        updated.next_steps.append("After the decision, compare the result against your stated goal and update the next review note.")
+        hints.append("detailed")
+
+    if user_profile.favorite_role:
+        updated.next_steps.append(f"Relate the decision back to your preferred role: {user_profile.favorite_role}.")
+        hints.append("favorite_role")
+    if user_profile.favorite_character:
+        updated.next_steps.append(f"Track whether this line keeps {user_profile.favorite_character} useful for the next key moment.")
+        hints.append("favorite_character")
+    if user_profile.goals:
+        updated.next_steps.append(f"Personal goal focus: {user_profile.goals[0]}.")
+        hints.append("goal")
+
+    updated.next_steps = updated.next_steps[:5]
+    if hints:
+        updated.metadata = {**updated.metadata, "personalization_hints": ",".join(hints)}
+    return updated
 
 
 def _analyze_pokemon(perception: PerceptionResult, question: str) -> AnalysisResponse:
