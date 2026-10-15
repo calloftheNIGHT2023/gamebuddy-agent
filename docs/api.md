@@ -238,3 +238,19 @@
 - `rating=down` with `correction` becomes a preference-style sample with `chosen` and `rejected` fields.
 
 This endpoint is intended as an export bridge for later SFT, DPO, RLHF, or offline evaluation pipelines. It does not fine-tune a model inside the web service.
+
+## Assistant and Agent Ops
+
+- `POST /api/v1/assistant`: `{game,task:"qa"|"build"|"review",question,state?,user_profile?,policy_id?}` -> `{answer,sources,analysis,evidence_status,trace_id}`. Build currently requires `rpg-build-demo`; build/review require a complete state. QA may use `{}`.
+- `GET /api/v1/ops/summary`: stored execution count, successful/fallback/error counts, mean latency, feedback and evaluation counts. Successful executions include usable fallbacks.
+- `GET /api/v1/ops/traces?limit=100` and `GET /api/v1/ops/traces/{id}`: real execution records and stage details.
+- `POST /api/v1/ops/traces/{id}/feedback`: `{rating:"up"|"down"|"neutral",correction?,tags?}`. All execution context comes from the stored trace.
+- `GET /api/v1/ops/policies`: immutable versions and current active pointer.
+- `POST /api/v1/ops/policies`: `{name,prompt,instructions:"text",max_next_steps:4}`; creates a fresh version, returns 201. Max steps must be 1–8.
+- `POST /api/v1/ops/policies/{id}/activate`: changes the default for future requests. An explicit policy_id overrides the active default for one request.
+- `GET /api/v1/ops/evaluations` and `POST /api/v1/ops/evaluations` with `{policy_id?}`: versioned offline checks; returns 201 for a new run.
+- `GET /api/v1/memory/training-samples.jsonl?sample_type=sft|preference`: reviewed JSONL download, with optional user_id/session_id/limit filters. JSON API remains at `/memory/training-samples`.
+
+Unknown traces/policies return 404 (feedback referencing an unknown trace returns 422). Invalid inputs return 422. Provider failure keeps a working response with `metadata.llm_status="fallback"` and a safe fallback_reason; unconfigured provider is `disabled`, successful enhancement is `enhanced`. Trace IDs and source paths are stable identifiers; retrieval scores are not probabilities.
+
+These operations endpoints are intended for a private local developer instance. The current API does not supply public user authentication or tenant isolation.

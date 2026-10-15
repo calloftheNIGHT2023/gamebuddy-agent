@@ -258,7 +258,9 @@ def test_feedback_route_returns_training_record(monkeypatch) -> None:
     body = response.json()
     assert body["rating"] == "down"
     assert body["correction"] == "Explain the safer pivot first."
-    assert captured["payload"].session_id == "session-feedback"
+    # The referenced trace was created without a session; client-supplied
+    # context cannot overwrite the canonical execution record.
+    assert captured["payload"].session_id is None
 
 
 def test_training_samples_route_uses_feedback_export(monkeypatch) -> None:

@@ -1,12 +1,27 @@
 """工具调用注册表和执行器，供模型在分析过程中访问外部能力。"""
 
-import json
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.models.schemas import AnalysisResponse, SupportedGame, UserProfile
 from app.services.mongo_store import mongo_store
+from app.services.retrieval import load_knowledge_pack, retrieve_knowledge
+
+
+MAX_TOOL_CALLS = 4
+
+
+class KnowledgeArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, str_strip_whitespace=True)
+
+    game: SupportedGame
+    topic: str = Field(min_length=1, max_length=240)
+
+
+class ProfileArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
 
 
 @dataclass
@@ -26,21 +41,7 @@ def get_tool_definitions() -> list[dict[str, Any]]:
             "function": {
                 "name": "get_game_knowledge",
                 "description": "Look up local game-specific strategy terms, beginner tips, and macro or build references before answering.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "game": {
-                            "type": "string",
-                            "enum": ["pokemon-battle-demo", "moba-postmatch-demo", "rpg-build-demo"]
-                        },
-                        "topic": {
-                            "type": "string",
-                            "description": "The concept, term, or topic to look up from the local knowledge pack."
-                        }
-                    },
-                    "required": ["game", "topic"],
-                    "additionalProperties": False
-                }
+                "parameters": KnowledgeArguments.model_json_schema(),
             }
         },
         {
@@ -48,42 +49,55 @@ def get_tool_definitions() -> list[dict[str, Any]]:
             "function": {
                 "name": "get_user_profile",
                 "description": "Read the optional user profile and response preferences to personalize the final answer.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "additionalProperties": False
-                }
+                "parameters": ProfileArguments.model_json_schema(),
             }
         }
     ]
 
 
-def execute_tool_call(name: str, arguments: dict[str, Any], context: ToolRuntimeContext) -> dict[str, Any]:
+def tool_error(code: str, message: str) -> dict[str, Any]:
+    return {"ok": False, "error": {"code": code, "message": message}}
+
+
+def execute_tool_call(name: str, arguments: Any, context: ToolRuntimeContext) -> dict[str, Any]:
     handlers = {
         "get_game_knowledge": _get_game_knowledge,
         "get_user_profile": _get_user_profile,
     }
-    handler = handlers.get(name)
+    handler = handlers.get(name) if isinstance(name, str) else None
     if handler is None:
-        raise ValueError(f"Unsupported tool: {name}")
-    return handler(arguments, context)
+        return tool_error("unknown_tool", "This tool is not in the allowed registry.")
+    validator = KnowledgeArguments if name == "get_game_knowledge" else ProfileArguments
+    try:
+        validated = validator.model_validate(arguments)
+    except ValidationError as error:
+        # Do not include raw input or Pydantic's echoed values in model/user logs.
+        fields = sorted({".".join(str(part) for part in item["loc"]) or "arguments" for item in error.errors()})
+        return tool_error("invalid_arguments", f"Invalid or unexpected argument fields: {', '.join(fields)}.")
+    if isinstance(validated, KnowledgeArguments) and validated.game != context.game:
+        return tool_error("game_mismatch", "Knowledge tools must use the current analysis game.")
+    try:
+        return {"ok": True, **handler(validated.model_dump(), context)}
+    except (OSError, ValueError, TypeError, RuntimeError):
+        return tool_error("tool_execution_failed", "The local tool could not complete; use the observed state.")
 
 
 def summarize_tool_names(tool_calls: list[dict[str, Any]]) -> str:
     if not tool_calls:
         return "none"
-    return ",".join(call["name"] for call in tool_calls)
+    return ",".join(str(call.get("name", "unknown")) for call in tool_calls)
 
 
 def _get_game_knowledge(arguments: dict[str, Any], context: ToolRuntimeContext) -> dict[str, Any]:
-    game = arguments.get("game") or context.game
-    topic = str(arguments.get("topic", "")).strip()
-    knowledge = _load_knowledge_pack(game)
-    matches = _collect_matches(knowledge, topic)
+    game = arguments["game"]
+    topic = arguments["topic"]
+    knowledge = load_knowledge_pack(game)
+    matches = retrieve_knowledge(game, topic, limit=6)
     return {
         "game": game,
         "topic": topic,
-        "matches": matches[:6],
+        "matches": matches,
+        "status": "matched" if matches else "no_match",
         "pack_sections": sorted(knowledge.keys()),
     }
 
@@ -113,57 +127,6 @@ def _get_user_profile(_: dict[str, Any], context: ToolRuntimeContext) -> dict[st
         "personalization_hints": _build_personalization_hints(inferred_skill_level, preferred_style, goals),
         "mongodb_enabled": 1 if mongo_store.enabled else 0,
     }
-
-
-def _load_knowledge_pack(game: SupportedGame) -> dict[str, Any]:
-    root = Path(__file__).resolve().parents[1] / "knowledge"
-    filename = {
-        "pokemon-battle-demo": "pokemon_demo_knowledge.json",
-        "moba-postmatch-demo": "moba_demo_knowledge.json",
-        "rpg-build-demo": "rpg_demo_knowledge.json",
-    }[game]
-    return json.loads((root / filename).read_text(encoding="utf-8"))
-
-
-def _collect_matches(node: Any, topic: str, path: str = "") -> list[dict[str, str]]:
-    matches: list[dict[str, str]] = []
-    lowered_topic = topic.lower()
-
-    if isinstance(node, dict):
-        for key, value in node.items():
-            current_path = f"{path}.{key}" if path else key
-            if lowered_topic and lowered_topic in key.lower():
-                matches.append({"path": current_path, "content": _stringify(value)})
-            matches.extend(_collect_matches(value, topic, current_path))
-    elif isinstance(node, list):
-        for index, value in enumerate(node):
-            current_path = f"{path}[{index}]"
-            text = _stringify(value)
-            if lowered_topic and lowered_topic in text.lower():
-                matches.append({"path": current_path, "content": text})
-            matches.extend(_collect_matches(value, topic, current_path))
-    elif isinstance(node, str):
-        if lowered_topic and lowered_topic in node.lower():
-            matches.append({"path": path or "root", "content": node})
-
-    if not matches and path == "":
-        matches.extend(_top_level_fallback(node))
-    return matches
-
-
-def _top_level_fallback(node: Any) -> list[dict[str, str]]:
-    if not isinstance(node, dict):
-        return []
-    fallback: list[dict[str, str]] = []
-    for key, value in list(node.items())[:3]:
-        fallback.append({"path": key, "content": _stringify(value)})
-    return fallback
-
-
-def _stringify(value: Any) -> str:
-    if isinstance(value, str):
-        return value
-    return json.dumps(value, ensure_ascii=False)
 
 
 def _infer_goal(game: SupportedGame, question: str) -> str:

@@ -1,26 +1,17 @@
-# GameBuddy Offline Evaluation
+# GameBuddy offline evaluation
 
-This report compares a legacy generic-answer baseline with the current GameBuddy orchestrated path.
-The evaluation is deterministic and does not require an external LLM key.
+Run from `backend`:
 
-## Aggregate Results
+```powershell
+python scripts/run_eval.py --output ../artifacts/offline-eval.json
+```
 
-| Metric | Before | After | Change |
-| --- | ---: | ---: | ---: |
-| accuracy | 0.24 | 0.90 | 280.0% |
-| interaction_experience | 0.48 | 0.94 | 97.1% |
-| overall | 0.33 | 0.92 | 175.2% |
-| personalization | 0.08 | 0.89 | 967.1% |
-| actionability | 0.50 | 1.00 | 100.0% |
+The same harness is available in `/ops/`. A run is pinned to an immutable policy version, stores individual outcomes and forces the external model off even when a key is configured. Evaluation requests do not populate user history or request traces.
 
-## Method
+The 12 checks cover three known structured situations, Chinese retrieval, an uncovered query, cited Q&A, Q&A abstention, a zero-resource RPG build, review event provenance, the local policy action budget, personalization, and invalid numeric input. Provider timeout, response validation, two-round function calling and MongoDB replication/failure are covered separately by mocked integration tests.
 
-- Accuracy: keyword coverage against expected game-specific concepts for each complex scenario.
-- Interaction experience: average of schema completeness, actionability, uncertainty disclosure, and personalization fit.
-- Personalization: whether the answer reflects user profile fields such as skill level, response style, favorite role or goal.
+Passing these checks means the listed contracts held on these fixed examples. It does not estimate gameplay decision accuracy, user satisfaction, human preference, robustness on arbitrary games or training gains. Relevance scores are ranking scores, not confidence probabilities.
 
-## Resume-Ready Result
+## Historical artifacts
 
-- On 3 complex game-analysis cases, accuracy improved from 0.24 to 0.90 (+280.0%), and interaction experience improved from 0.48 to 0.94 (+97.1%).
-
-Raw case-level data is stored in `docs/evaluation-results.json`.
+`evaluation-results.json` and `backend/scripts/evaluate_response_quality.py` are retained as historical heuristic diagnostics. Their keyword coverage and synthetic baseline comparisons are not independently validated accuracy or interaction-experience metrics. Do not use the percentages as resume performance claims. The current harness does not regenerate that report.

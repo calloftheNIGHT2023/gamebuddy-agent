@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import analysis, health, memory
+from app.api.routes import analysis, health, memory, ops
 from app.core.config import settings
 
 # FastAPI 应用的总入口。
@@ -38,6 +38,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(memory.router, prefix="/api/v1")
+app.include_router(ops.router, prefix="/api/v1")
 
 
 @app.get("/")

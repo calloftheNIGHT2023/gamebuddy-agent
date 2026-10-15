@@ -29,7 +29,7 @@ export type AnalysisResponse = {
     recommended_actions: string[];
     longer_term_improvement: string[];
   };
-  metadata: Record<string, string | number>;
+  metadata: Record<string, unknown>;
 };
 
 export type UserProfile = {

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ReviewClient } from "@/components/review-client";
+import { WorkspaceNav } from "@/components/workspace-nav";
 import { translations } from "@/lib/content";
 import type { Locale } from "@/lib/types";
 
@@ -29,6 +30,7 @@ export default function ReviewPage() {
 
   return (
     <main className="min-h-screen px-6 py-8 md:px-10 lg:px-16">
+      <div className="mx-auto mb-6 max-w-6xl"><WorkspaceNav current="review" locale={locale} /></div>
       <div className="mx-auto mb-6 flex max-w-6xl items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-pine">GameBuddy Agent</p>

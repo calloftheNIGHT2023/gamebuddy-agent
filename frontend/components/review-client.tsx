@@ -22,7 +22,8 @@ export function ReviewClient({ initialLocale }: Props) {
     const queryLocale = params.get("lang");
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
     if (stored) {
-      setResult(JSON.parse(stored) as AnalysisResponse);
+      try { setResult(JSON.parse(stored) as AnalysisResponse); }
+      catch { window.localStorage.removeItem("gamebuddy:last-result"); }
     }
     if (queryLocale === "en" || queryLocale === "zh") {
       setLocale(queryLocale);
