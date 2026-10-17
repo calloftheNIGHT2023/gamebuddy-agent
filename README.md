@@ -1,8 +1,20 @@
 # GameBuddy Agent
 
-## MongoDB Persistence
+## Local-first assistant and Agent Ops | 本地助手与迭代闭环
 
-MongoDB support is optional and is used for three persistence paths:
+The app runs without an API key or MongoDB. Start the existing FastAPI backend and Next.js frontend, then open:
+
+- `/assistant/`: cited game Q&A, RPG progression advice constrained by supplied resources, and evidence-bounded match review.
+- `/review/`: structured state analysis for the three demo game packs. Screenshot input remains an explicitly labelled placeholder.
+- `/ops/`: real request statistics, stage traces, immutable prompt/policy versions, offline regression checks, trace-linked human review and JSONL exports.
+
+无 Key、无 MongoDB 即可运行。画像、历史、反馈、Trace、Policy 和评测结果写入本地 SQLite；设置 `GAMEBUDDY_DATA_DIR` 可更换私有数据目录。OpenRouter 是可选增强，超时或不合格响应会保留可用的规则与本地检索结果，并记录降级原因。
+
+See [the runnable walkthrough and resume coverage](docs/resume-coverage.md), [API](docs/api.md), and [evaluation scope](docs/evaluation.md). No SFT/DPO training or live provider quality result is claimed.
+
+## Optional MongoDB replication
+
+SQLite always stores the following data first. Optional MongoDB replicates these paths and falls back to local copies on failure:
 
 - user profile storage and profile merge by `user_id`
 - analysis history storage for each request
@@ -168,6 +180,8 @@ Open:
 - frontend: `http://localhost:3000`
 - backend: `http://localhost:8000`
 
+Windows 后台启动：安装依赖并完成前端静态构建后，在仓库根目录运行 `.\scripts\start-local.ps1`；用 `.\scripts\stop-local.ps1` 停止。日志位于 `.runtime/`，启动方式和公网配置见 [deployment guide](docs/deployment.md)。
+
 ## Docker
 
 ```bash
@@ -240,21 +254,23 @@ Good contributions usually include:
 - matching docs updates when behavior changes / 行为变更时同步更新文档
 - sample data updates when a demo format changes / Demo 格式变化时同步更新示例数据
 - tests for backend response-shape or logic changes / 为后端响应结构或逻辑变更补充测试
-# Function Calling
+## Function Calling | 工具调用
 
 GameBuddy now supports an OpenAI-compatible function-calling path when `OPENROUTER_API_KEY` is configured.
 
-GameBuddy 鐜板湪鍦ㄩ厤缃?`OPENROUTER_API_KEY` 鏃舵敮鎸?OpenAI 鍏煎鐨?function calling 璺緞銆?
+配置 `OPENROUTER_API_KEY` 后，可通过 OpenRouter 使用兼容的 Function Calling；无 Key 时规则与本地检索仍可运行。
 
 Current local tools:
 
-褰撳墠鏈湴宸ュ叿锛?
+当前本地工具：
+
 - `get_game_knowledge`: query local game knowledge packs for glossary, beginner tips, macro, and build references
 - `get_user_profile`: read optional request-time user preferences for response personalization
 
 Execution flow:
 
-鎵ц娴佺▼锛?
+执行流程：
+
 1. Build the normal heuristic draft first.
 2. Let the model decide whether tool use is necessary.
 3. Execute local tools on the backend and feed the results back to the model.
@@ -262,7 +278,7 @@ Execution flow:
 
 This keeps the API response shape stable while making the LLM layer more grounded and extensible.
 
-杩欒 API 鍝嶅簲缁撴瀯淇濇寔绋冲畾锛屽悓鏃朵篃璁╁ぇ妯″瀷灞傛洿鏈夋牴鎹笌鎵╁睍鎬с€?
+工具调用受白名单、严格参数与调用次数约束；超时或最终响应校验失败会保留可用的本地结果。实际工具结果和降级原因写入 Trace。
 
 Optional personalization fields for `POST /api/v1/analyze/state`:
 

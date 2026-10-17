@@ -1,5 +1,7 @@
 # 代理设计
 
+本文保留早期原型的概念拆分，`BattleState` 与 `backend/app/agents/` 不属于当前运行链路。现行实现使用 `PerceptionResult`、游戏包规则、本地检索、可选工具调用与可追踪编排，详见 [当前架构](architecture.md)。
+
 ## 1. Perception Agent
 
 ### 作用

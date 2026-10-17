@@ -37,6 +37,16 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Validate production API URL
+        run: node scripts/validate-public-api.mjs
+
+      - name: Check frontend
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run test:api
+
       - name: Build static site
         working-directory: frontend
         run: npm run build

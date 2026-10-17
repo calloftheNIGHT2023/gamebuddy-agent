@@ -1,0 +1,49 @@
+name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: python -m pip install -r requirements.txt
+        working-directory: backend
+      - run: python -m pytest -q
+        working-directory: backend
+      - run: python scripts/run_eval.py --output ../artifacts/offline-eval.json
+        working-directory: backend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-eval
+          path: artifacts/offline-eval.json
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+      - run: npm run typecheck
+        working-directory: frontend
+      - run: npm run test:api
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend

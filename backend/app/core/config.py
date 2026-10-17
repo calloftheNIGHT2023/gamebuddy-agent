@@ -1,8 +1,9 @@
 """集中管理后端配置，统一处理环境变量和默认值。"""
 
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +11,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="", extra="ignore", env_file=".env", env_file_encoding="utf-8")
 
     app_env: str = Field(default="development", alias="GAMEBUDDY_ENV")
+    admin_token: SecretStr | None = Field(default=None, alias="GAMEBUDDY_ADMIN_TOKEN")
+    storage_durability: Literal["ephemeral", "persistent"] | None = Field(
+        default=None, alias="GAMEBUDDY_STORAGE_DURABILITY",
+    )
+    max_request_bytes: int = Field(default=256 * 1024, ge=1024, le=8 * 1024 * 1024, alias="GAMEBUDDY_MAX_REQUEST_BYTES")
     backend_cors_origins: str = Field(
         default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3002,http://127.0.0.1:3002",
         alias="BACKEND_CORS_ORIGINS",
@@ -28,6 +34,15 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [item.strip() for item in self.backend_cors_origins.split(",") if item.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().casefold() == "production"
+
+    @property
+    def effective_storage_durability(self) -> Literal["ephemeral", "persistent"]:
+        # This is an explicit deployment declaration, not an inference from a URI.
+        return self.storage_durability or ("ephemeral" if self.is_production else "persistent")
 
     @property
     def has_openrouter(self) -> bool:

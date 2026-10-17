@@ -1,76 +1,68 @@
 # Deployment
 
-This project is split into two deploy targets:
+The public demo uses GitHub Pages for the static frontend and the existing Render Free service for FastAPI. The canonical address is **https://www.gamebuddyagent.site/**. Reuse the existing domain; deployment does not require buying another domain or upgrading hosting.
 
-- frontend: GitHub Pages
-- backend: Render
+## Backend on Render
 
-## 1. Deploy the backend on Render
+Create from `render.yaml`, or update the existing service manually:
 
-Use the repository root and let Render read `render.yaml`, or create the service manually with these values:
-
-- Root Directory: `backend`
-- Build Command: `pip install -r requirements.txt`
-- Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Root Directory: leave empty (repository root).
+- Build Command: `pip install -r backend/requirements.txt`
+- Start Command: `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Health Check Path: `/health`
+- Instance: Free.
 
-Render environment variables:
+The repository root is needed because retrieval fixtures live in `samples/`, outside `backend/`. Editing `render.yaml` alone does not update a manually created service.
+
+Set these environment variables:
 
 ```env
 GAMEBUDDY_ENV=production
-BACKEND_CORS_ORIGINS=https://gamebuddyagent.site
-OPENROUTER_API_KEY=your_openrouter_key
-OPENROUTER_MODEL=openrouter/free
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_SITE_URL=https://gamebuddyagent.site
-OPENROUTER_APP_NAME=GameBuddy Agent
+BACKEND_CORS_ORIGINS=https://www.gamebuddyagent.site
+GAMEBUDDY_STORAGE_DURABILITY=ephemeral
+GAMEBUDDY_MAX_REQUEST_BYTES=262144
 ```
 
-After deployment, copy the Render backend URL, for example:
+Anonymous visitors can use state analysis, grounded Q&A and reviews. Requests use the built-in policy, ignore identity fields, do not read or write personal history or traces, and do not call an external model. Screenshot analysis requires private access and remains a placeholder recognizer.
 
-```text
-https://gamebuddy-agent-backend.onrender.com
+Private Ops, history, policy editing, evaluations and exports require a server-side `GAMEBUDDY_ADMIN_TOKEN`. Generate a long random token and set it only in Render's secret environment settings. Enter the same token in the website's administrator access panel; it is kept in that browser tab's session storage and sent only to the configured API origin. Never place it in Git, URLs, screenshots, build output or a `NEXT_PUBLIC_*` variable. Without a configured token, private endpoints return 503; an absent or invalid token returns 401 when private access is configured. This is single-operator access, not multi-user authentication.
+
+`OPENROUTER_API_KEY` and MongoDB are optional for private use. They are not needed for the public demo. MongoDB covers profile/history/feedback only; it does not make SQLite-backed Ops data durable.
+
+Render Free sleeps after idle periods and may need about a minute to wake. Its filesystem is ephemeral: SQLite data can disappear on restart, redeploy or sleep. Do not promise durable online history on this plan. Export private data before planned redeployments. The health response reports `mode`, `private_access` and declared `storage` so the UI can explain this limitation. See [Render Free documentation](https://render.com/docs/free).
+
+## Frontend on GitHub Pages
+
+In repository settings, set Pages source to GitHub Actions and the Actions repository variable:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://gamebuddy-agent-backend.onrender.com/api/v1
 ```
 
-## 2. Configure GitHub Pages
+The deployment workflow validates that this is an HTTPS public URL ending in `/api/v1`. Missing configuration or a loopback address fails the build. This value is embedded at build time: changing the variable requires rebuilding Pages.
 
-In the GitHub repository:
+Both `CNAME` files use `www.gamebuddyagent.site`. Keep `www` pointed to GitHub Pages and enable HTTPS enforcement after its certificate is approved. Configure the apex domain separately if it should redirect to `www`; verify its DNS and certificate before advertising it.
 
-1. Open `Settings -> Pages`
-2. Set source to `GitHub Actions`
-3. Open `Settings -> Secrets and variables -> Actions -> Variables`
-4. Add a repository variable named `NEXT_PUBLIC_API_BASE_URL`
+## Verification
 
-Example value:
+1. Confirm the Render deploy is live on the intended commit.
+2. Open `/health` and expect `status: ok`, `mode: public`, `storage: ephemeral`.
+3. Open `https://www.gamebuddyagent.site/assistant/`, wait for the backend connection, and submit a grounded question.
+4. Confirm anonymous Ops/history access is denied; use an administrator token only if private access is configured.
+5. Confirm playable games still work without the API.
 
-```text
-https://gamebuddy-agent-backend.onrender.com/api/v1
+## Local startup on Windows
+
+Install `backend/requirements.txt` and build the frontend once with `npm ci` then `npm run build` in `frontend/`. Build locally without the production API environment variable to use the local backend fallback. From the repository root:
+
+```powershell
+.\scripts\start-local.ps1
 ```
 
-The Pages workflow in `.github/workflows/deploy-pages.yml` will inject that value into the frontend build.
+This starts hidden background servers on `127.0.0.1:8000` and `127.0.0.1:3000`, records logs/PIDs under ignored `.runtime/`, and reuses healthy servers. They run until stopped or Windows exits. Open `http://127.0.0.1:3000/assistant/` or `/ops/`. Use `-BackendOnly` when the frontend is already running.
 
-## 3. Configure the custom domain
-
-This repo already includes `frontend/public/CNAME` with:
-
-```text
-gamebuddyagent.site
+```powershell
+.\scripts\stop-local.ps1
 ```
 
-Point your domain DNS to GitHub Pages according to GitHub's custom-domain instructions.
-
-## 4. Final checks
-
-Once both deployments are live:
-
-- open `https://gamebuddyagent.site`
-- confirm the homepage loads
-- confirm `/play/` pages work
-- submit a state analysis and confirm the frontend reaches the Render backend
-- open the backend `/health` URL directly to confirm Render is healthy
-
-## Notes
-
-- GitHub Pages only serves the frontend. It cannot run FastAPI.
-- If `NEXT_PUBLIC_API_BASE_URL` is missing in GitHub Actions variables, the deployed frontend will load but analysis requests will fail with a clear configuration error.
-- Browser-playable game modules still work even if the backend is temporarily down.
+The stop script checks each recorded process belongs to this project's launcher before stopping it. Local development keeps full private features and persistent SQLite storage. The connection panel checks `/health`, distinguishes API configuration errors from unreachable servers, and offers retry.

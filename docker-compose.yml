@@ -3,13 +3,14 @@ version: "3.9"
 services:
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env.example
     volumes:
-      - ./backend:/app
+      - ./backend/data:/app/backend/data
 
   frontend:
     build:
@@ -20,7 +21,5 @@ services:
       - .env.example
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
-    volumes:
-      - ./frontend:/app
     depends_on:
       - backend

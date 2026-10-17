@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # 当前后端允许的游戏类型枚举。
@@ -65,7 +65,7 @@ class AnalysisResponse(BaseModel):
     risks_or_uncertainties: list[str]
     next_steps: list[str]
     review_report: ReviewSection
-    metadata: dict[str, str | float | int]
+    metadata: dict[str, Any]
 
 
 class UserProfile(BaseModel):
@@ -143,7 +143,55 @@ class StateAnalysisRequest(BaseModel):
     # game 和 question 决定分析上下文，
     # state 则是实际被推理的游戏状态。
     game: SupportedGame = "pokemon-battle-demo"
-    question: str
+    question: str = Field(min_length=1, max_length=4000)
     state: dict[str, Any]
     session_id: str | None = None
     user_profile: UserProfile | None = None
+    policy_id: str | None = None
+
+    @field_validator("question")
+    @classmethod
+    def nonblank_question(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("question must not be blank")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def valid_state(self):
+        from app.services.state_validation import validate_state
+
+        validate_state(self.game, self.state)
+        return self
+
+
+class AssistantRequest(BaseModel):
+    game: SupportedGame = "moba-postmatch-demo"
+    task: Literal["qa", "build", "review"] = "qa"
+    question: str = Field(min_length=1, max_length=4000)
+    state: dict[str, Any] = Field(default_factory=dict)
+    session_id: str | None = None
+    user_profile: UserProfile | None = None
+    policy_id: str | None = None
+
+    @field_validator("question")
+    @classmethod
+    def nonblank_question(cls, value: str) -> str:
+        return StateAnalysisRequest.nonblank_question(value)
+
+    @model_validator(mode="after")
+    def valid_state(self):
+        from app.services.state_validation import validate_state
+
+        if self.task == "build" and self.game != "rpg-build-demo":
+            raise ValueError("build currently supports rpg-build-demo; use review for match coaching")
+        if self.state or self.task != "qa":
+            validate_state(self.game, self.state)
+        return self
+
+
+class AssistantResponse(BaseModel):
+    answer: str
+    sources: list[dict[str, Any]]
+    analysis: AnalysisResponse
+    evidence_status: Literal["grounded", "insufficient"]
+    trace_id: str
