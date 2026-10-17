@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { translations } from "@/lib/content";
+import { isLocalPage } from "@/lib/api-client";
 import type { AnalysisResponse, Locale } from "@/lib/types";
 
 type Props = {
@@ -17,13 +18,13 @@ export function ReviewClient({ initialLocale }: Props) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("gamebuddy:last-result");
+    const stored = window.sessionStorage.getItem("gamebuddy:last-result") || (isLocalPage() ? window.localStorage.getItem("gamebuddy:last-result") : null);
     const params = new URLSearchParams(window.location.search);
     const queryLocale = params.get("lang");
     const storedLocale = window.localStorage.getItem("gamebuddy:locale");
     if (stored) {
       try { setResult(JSON.parse(stored) as AnalysisResponse); }
-      catch { window.localStorage.removeItem("gamebuddy:last-result"); }
+      catch { window.sessionStorage.removeItem("gamebuddy:last-result"); }
     }
     if (queryLocale === "en" || queryLocale === "zh") {
       setLocale(queryLocale);

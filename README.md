@@ -180,6 +180,8 @@ Open:
 - frontend: `http://localhost:3000`
 - backend: `http://localhost:8000`
 
+Windows 后台启动：安装依赖并完成前端静态构建后，在仓库根目录运行 `.\scripts\start-local.ps1`；用 `.\scripts\stop-local.ps1` 停止。日志位于 `.runtime/`，启动方式和公网配置见 [deployment guide](docs/deployment.md)。
+
 ## Docker
 
 ```bash

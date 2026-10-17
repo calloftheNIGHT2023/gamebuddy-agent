@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { WorkspaceNav } from "@/components/workspace-nav";
+import { AdminAccess } from "@/components/admin-access";
+import { ConnectionStatus } from "@/components/connection-status";
+import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import {
   activatePolicy, annotateTrace, createPolicy, downloadSamples, getEvaluations, getOpsSummary, getPolicies, getTrace, getTraces, runEvaluation,
   type AgentPolicy, type AgentTrace, type EvaluationRun, type OpsSummary,
@@ -53,11 +56,17 @@ export function OpsClient() {
   const [working, setWorking] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { health } = useConnectionStatus();
+  const { hasToken, revision } = useAdminAccess();
+  const privateAccess = health?.mode === "local" || hasToken;
+  const refreshRevision = useRef(0);
 
   const refresh = useCallback(async () => {
+    const requestRevision = ++refreshRevision.current;
     setLoading(true);
     const keys: SectionKey[] = ["summary", "traces", "policies", "evaluations"];
     const results = await Promise.allSettled([getOpsSummary(), getTraces(), getPolicies(), getEvaluations()]);
+    if (requestRevision !== refreshRevision.current) return;
     const nextErrors: Partial<Record<SectionKey, string>> = {};
     results.forEach((result, index) => { if (result.status === "rejected") nextErrors[keys[index]] = errorMessage(result.reason); });
     if (results[0].status === "fulfilled") setSummary(results[0].value as OpsSummary); else setSummary(null);
@@ -71,8 +80,15 @@ export function OpsClient() {
   useEffect(() => {
     const traceId = new URLSearchParams(window.location.search).get("trace_id");
     if (traceId) setSelectedId(traceId);
-    void refresh();
-  }, [refresh]);
+  }, []);
+
+  useEffect(() => {
+    refreshRevision.current += 1;
+    setSummary(null); setTraces([]); setPolicies([]); setEvaluations([]); setSelectedTrace(null);
+    setErrors({}); setActionError(null); setNotice(null);
+    if (privateAccess) void refresh(); else setLoading(false);
+    return () => { refreshRevision.current += 1; };
+  }, [refresh, privateAccess, revision]);
 
   useEffect(() => {
     let current = true;
@@ -83,13 +99,13 @@ export function OpsClient() {
     setRating("up");
     setNotice(null);
     setActionError(null);
-    if (!selectedId) return;
+    if (!selectedId || !privateAccess) { setTraceLoading(false); return; }
     setTraceLoading(true);
     getTrace(selectedId).then((trace) => { if (current) setSelectedTrace(trace); })
       .catch((error) => { if (current) setTraceError(errorMessage(error)); })
       .finally(() => { if (current) setTraceLoading(false); });
     return () => { current = false; };
-  }, [selectedId]);
+  }, [selectedId, privateAccess, revision]);
 
   async function action(key: string, operation: () => Promise<void>) {
     setWorking(key); setActionError(null); setNotice(null);
@@ -135,14 +151,18 @@ export function OpsClient() {
     <main lang="zh-CN" className="min-h-screen px-6 py-8 md:px-10 lg:px-16">
       <div className="mx-auto max-w-7xl space-y-7">
         <WorkspaceNav current="ops" />
+        <ConnectionStatus />
+        <AdminAccess />
         <header className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-ember">GameBuddy · Agent operations</p>
             <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">每次建议，都有迹可循</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-ink/65">查看真实请求的执行步骤、管理策略版本、运行离线检查，并把人工反馈导出为训练数据。指标来自当前后端记录。</p>
           </div>
-          <button type="button" onClick={() => void refresh()} disabled={loading || !!working} className={secondary}>{loading ? "加载中…" : "刷新数据"}</button>
+          <button type="button" onClick={() => void refresh()} disabled={loading || !!working || !privateAccess} className={secondary}>{loading ? "加载中…" : "刷新数据"}</button>
         </header>
+        {!privateAccess && <p role="status" className="rounded-2xl bg-mist p-5 text-sm leading-7 text-ink/65">{health?.mode === "public" ? "公开演示的管理数据需要管理员令牌。请在上方保存有效令牌后读取；匿名游戏助手仍可使用。" : "正在等待本地后端连接，或管理员令牌。请先检查上方连接状态。"}</p>}
+        {privateAccess && <>
         <Alert message={errors.summary} />
         <section aria-label="运行概况" aria-busy={loading} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {metrics.map(([label, value, hint]) => <article key={label} className="rounded-3xl border border-ink/10 bg-white/85 p-5 shadow-card">
@@ -234,6 +254,7 @@ export function OpsClient() {
           <div className="mt-6 grid gap-5 md:grid-cols-2">{([{ value: "sft", title: "SFT 指令样本", detail: "整理输入与理想回答，优先采用人工修正内容。先在执行 Trace 中添加质量评价或完整修正回答。" }, { value: "preference", title: "Preference 偏好样本", detail: "整理同一输入下的 chosen / rejected 回答。请在真实 Trace 上提供优于原回答的完整修正内容。" }] as const).map((dataset) => <article key={dataset.value} className="rounded-3xl bg-mist p-6"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-ember">{dataset.value}.jsonl</p><h3 className="mt-3 text-xl font-semibold">{dataset.title}</h3><p className="mt-3 text-sm leading-6 text-ink/65">{dataset.detail}</p><button type="button" disabled={!!working} className={`mt-5 ${primary}`} onClick={() => void action(`export-${dataset.value}`, async () => { await downloadSamples(dataset.value); setNotice(`${dataset.title}已导出。`); })}>{working === `export-${dataset.value}` ? "导出中…" : "下载 JSONL"}</button></article>)}</div>
           <p className="mt-5 text-xs leading-6 text-ink/55">反馈保存与样本导出构成数据整理链路；当前页面不执行模型训练。</p>
         </section>}
+        </>}
       </div>
     </main>
   );

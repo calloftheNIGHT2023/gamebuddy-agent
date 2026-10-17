@@ -2,15 +2,16 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.models.schemas import AnalysisResponse, FeedbackRequest, UserProfile
 from app.services import ops
 from app.services.local_store import local_store
 from app.services.mongo_store import mongo_store
+from app.security import require_private_access
 
-router = APIRouter(prefix="/ops", tags=["agent-ops"])
+router = APIRouter(prefix="/ops", tags=["agent-ops"], dependencies=[Depends(require_private_access)])
 
 
 class PolicyRequest(BaseModel):

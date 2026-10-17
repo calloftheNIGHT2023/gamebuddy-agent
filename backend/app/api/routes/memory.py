@@ -3,14 +3,15 @@
 import json
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 
 from app.models.schemas import AnalysisHistoryItem, AnalysisResponse, FeedbackItem, FeedbackRequest, TrainingSample, UserProfile, UserProfileUpsertRequest
 from app.services import ops
 from app.services.mongo_store import mongo_store
+from app.security import require_private_access
 
-router = APIRouter(tags=["memory"])
+router = APIRouter(tags=["memory"], dependencies=[Depends(require_private_access)])
 
 
 @router.get("/memory/profile/{user_id}", response_model=UserProfile | None)

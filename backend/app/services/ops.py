@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.services.local_store import local_store
+from app.services.runtime import public_request
 
 
 def now() -> str:
@@ -25,6 +26,10 @@ def active_policy_id() -> str:
 
 
 def get_policy(policy_id: str | None = None) -> dict:
+    if public_request.get():
+        if policy_id not in (None, DEFAULT_POLICY["id"]):
+            raise KeyError("Policy version not available for public requests")
+        return {**DEFAULT_POLICY, "active": False}
     selected = policy_id or active_policy_id()
     policy = DEFAULT_POLICY.copy() if selected == DEFAULT_POLICY["id"] else local_store.get("policies", selected)
     if policy is None:

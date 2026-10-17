@@ -4,6 +4,8 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 import { WorkspaceNav } from "@/components/workspace-nav";
+import { ConnectionStatus } from "@/components/connection-status";
+import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import { askAssistant, type AssistantResponse, type AssistantTask } from "@/lib/ops-api";
 import type { GameKey, GameState } from "@/lib/types";
 
@@ -38,6 +40,9 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AssistantResponse | null>(null);
+  const { health } = useConnectionStatus();
+  const { hasToken } = useAdminAccess();
+  const privateAccess = health?.mode === "local" || hasToken;
 
   useEffect(() => {
     try {
@@ -64,9 +69,9 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
     setLoading(true);
     setResult(null);
     try {
-      const response = await askAssistant({ game, task, question: question.trim(), state, user_profile: userId.trim() ? { user_id: userId.trim() } : undefined });
+      const response = await askAssistant({ game, task, question: question.trim(), state, user_profile: privateAccess && userId.trim() ? { user_id: userId.trim() } : undefined });
       setResult(response);
-      window.localStorage.setItem("gamebuddy:last-result", JSON.stringify(response.analysis));
+      try { window.sessionStorage.setItem("gamebuddy:last-result", JSON.stringify(response.analysis)); } catch { /* The answer remains usable when browser storage is disabled. */ }
     } catch (cause) { setError(message(cause)); }
     finally { setLoading(false); }
   }
@@ -75,6 +80,7 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
     <main lang="zh-CN" className="min-h-screen px-6 py-8 md:px-10 lg:px-16">
       <div className="mx-auto max-w-7xl space-y-8">
         <WorkspaceNav current="assistant" />
+        <ConnectionStatus />
         <header className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-ember">GameBuddy · Knowledge assistant</p>
           <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">从一个问题，找到下一步</h1>
@@ -101,7 +107,7 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
               <textarea required maxLength={4000} rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={task === "qa" ? qaHints[game] : tasks.find((item) => item.value === task)?.hint} className="mt-2 w-full rounded-2xl border border-ink/15 bg-mist px-4 py-3 font-normal" />
             </label>
             <label className="block text-sm font-semibold">用户 ID <span className="font-normal text-ink/55">（可选，用于读取已保存画像）</span>
-              <input maxLength={128} value={userId} onChange={(event) => setUserId(event.target.value)} placeholder="例如 player-001" className="mt-2 w-full rounded-2xl border border-ink/15 bg-mist px-4 py-3 font-normal" />
+              <input disabled={!privateAccess} maxLength={128} value={privateAccess ? userId : ""} onChange={(event) => setUserId(event.target.value)} placeholder={privateAccess ? "例如 player-001" : "公开演示不读取个人画像"} className="mt-2 w-full rounded-2xl border border-ink/15 bg-mist px-4 py-3 font-normal disabled:opacity-60" />
             </label>
             <details open={task !== "qa"} className="rounded-2xl bg-mist p-4">
               <summary className="cursor-pointer text-sm font-semibold">局势 JSON（{task === "qa" ? "问答可选" : "当前任务必填"}）</summary>
@@ -139,9 +145,9 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
               </section>
               <div className="flex flex-wrap gap-3">
                 <Link href="/review?lang=zh" className="rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">查看复盘报告</Link>
-                <Link href={`/ops?trace_id=${encodeURIComponent(result.trace_id)}`} className="rounded-full border border-ink/10 bg-white px-5 py-3 text-sm font-semibold">查看执行与标注 →</Link>
+                {privateAccess && <Link href={`/ops?trace_id=${encodeURIComponent(result.trace_id)}`} className="rounded-full border border-ink/10 bg-white px-5 py-3 text-sm font-semibold">查看执行与标注 →</Link>}
               </div>
-              <p className="break-all text-xs text-ink/50">Trace ID：{result.trace_id}</p>
+              {privateAccess ? <p className="break-all text-xs text-ink/50">Trace ID：{result.trace_id}</p> : <p className="text-xs text-ink/50">公开演示不保存个人历史；复盘结果仅在当前标签页临时保留。</p>}
             </>}
           </section>
         </div>

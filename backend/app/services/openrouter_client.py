@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.core.config import settings
 from app.models.schemas import AnalysisResponse, DirectionPrediction, ReviewSection, TacticalAdviceItem, UserProfile
 from app.services.retrieval import retrieval_query, retrieve_knowledge
-from app.services.runtime import current_policy, offline_mode
+from app.services.runtime import current_policy, offline_mode, public_request
 from app.services.tools import MAX_TOOL_CALLS, ToolRuntimeContext, execute_tool_call, get_tool_definitions, summarize_tool_names, tool_error
 
 
@@ -122,6 +122,9 @@ def maybe_enhance_analysis(
         "tools_used": "none",
         "policy_id": str(policy.get("id", "default")),
     }
+    if public_request.get():
+        grounded.metadata["llm_disabled_reason"] = "public_request"
+        return grounded
     if not allow_llm:
         grounded.metadata["llm_disabled_reason"] = "request_constraint"
         return grounded

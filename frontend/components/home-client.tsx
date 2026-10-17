@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { AnalysisPanel } from "@/components/analysis-panel";
+import { ConnectionStatus } from "@/components/connection-status";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { MemoryPanel } from "@/components/memory-panel";
 import { PromptList } from "@/components/prompt-list";
@@ -96,6 +97,8 @@ export default function HomeClient({ samples, initialLocale }: Props) {
           <WorkspaceNav current="home" locale={locale} />
           <LocaleSwitcher locale={locale} label={t.langLabel} onLocaleChange={setLocale} />
         </div>
+
+        <div className="mb-6"><ConnectionStatus /></div>
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div className="space-y-6">

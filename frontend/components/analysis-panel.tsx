@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { saveFeedback } from "@/lib/api";
 import { translations } from "@/lib/content";
+import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import type { AnalysisResponse, FeedbackRating, Locale, UserProfile } from "@/lib/types";
 
 type Props = {
@@ -20,6 +21,9 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
   const [correction, setCorrection] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<string | null>(null);
   const [savingFeedback, setSavingFeedback] = useState(false);
+  const { health } = useConnectionStatus();
+  const { hasToken } = useAdminAccess();
+  const privateAccess = health?.mode === "local" || hasToken;
 
   async function handleFeedback(rating: FeedbackRating) {
     if (!result) {
@@ -42,8 +46,8 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
         tags: correction.trim() ? ["user-correction"] : [],
       });
       setFeedbackStatus(locale === "zh" ? "反馈已保存，可用于后续 SFT / 偏好数据整理。" : "Feedback saved for later SFT / preference data export.");
-    } catch {
-      setFeedbackStatus(locale === "zh" ? "反馈保存失败。" : "Failed to save feedback.");
+    } catch (error) {
+      setFeedbackStatus(error instanceof Error ? error.message : locale === "zh" ? "反馈保存失败。" : "Failed to save feedback.");
     } finally {
       setSavingFeedback(false);
     }
@@ -146,7 +150,7 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={savingFeedback}
+              disabled={savingFeedback || !privateAccess}
               onClick={() => handleFeedback("up")}
               className="rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
@@ -154,7 +158,7 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
             </button>
             <button
               type="button"
-              disabled={savingFeedback}
+              disabled={savingFeedback || !privateAccess}
               onClick={() => handleFeedback("down")}
               className="rounded-full bg-mist px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60"
             >
@@ -162,6 +166,7 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
             </button>
           </div>
         </div>
+        {!privateAccess && <p className="mt-4 text-xs leading-6 text-ink/65">公开演示不保存匿名反馈。请到<Link href="/ops" className="font-semibold text-pine underline">管理员入口</Link>登录后标注回答。</p>}
         <textarea
           value={correction}
           onChange={(event) => setCorrection(event.target.value)}

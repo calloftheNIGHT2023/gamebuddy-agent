@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.models.schemas import AnalysisResponse, SupportedGame, UserProfile
 from app.services.mongo_store import mongo_store
 from app.services.retrieval import load_knowledge_pack, retrieve_knowledge
+from app.services.runtime import public_request
 
 
 MAX_TOOL_CALLS = 4
@@ -103,7 +104,7 @@ def _get_game_knowledge(arguments: dict[str, Any], context: ToolRuntimeContext) 
 
 
 def _get_user_profile(_: dict[str, Any], context: ToolRuntimeContext) -> dict[str, Any]:
-    profile = mongo_store.merge_user_profile(context.user_profile) or context.user_profile
+    profile = context.user_profile if public_request.get() else (mongo_store.merge_user_profile(context.user_profile) or context.user_profile)
     inferred_skill_level = (
         profile.skill_level
         if profile and profile.skill_level

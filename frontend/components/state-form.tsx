@@ -2,9 +2,11 @@
 
 // 分析表单组件，负责收集问题、状态和截图并调用后端接口。
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 
 import { analyzeScreenshot, analyzeState } from "@/lib/api";
 import { gameOptions, promptSets, translations } from "@/lib/content";
+import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import type { AnalysisResponse, GameKey, GameState, Locale, UserProfile } from "@/lib/types";
 
 type Props = {
@@ -25,6 +27,9 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { health } = useConnectionStatus();
+  const { hasToken } = useAdminAccess();
+  const privateAccess = health?.mode === "local" || hasToken;
 
   useEffect(() => {
     setJsonText(samples[game]);
@@ -41,15 +46,16 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
 
       if (mode === "json") {
         const parsed = JSON.parse(jsonText) as GameState;
-        result = await analyzeState(game, question, parsed, { sessionId, userProfile });
+        result = await analyzeState(game, question, parsed, privateAccess ? { sessionId, userProfile } : undefined);
       } else {
+        if (!privateAccess) throw new Error("公网截图分析需要管理员访问。请在 Agent Ops 输入有效令牌，或使用 JSON 局势分析。");
         if (!file) {
           throw new Error(t.chooseFile);
         }
         result = await analyzeScreenshot(game, question, file, { sessionId, userProfile });
       }
 
-      window.localStorage.setItem("gamebuddy:last-result", JSON.stringify(result));
+      try { window.sessionStorage.setItem("gamebuddy:last-result", JSON.stringify(result)); } catch { /* Keep displaying successful results if storage is unavailable. */ }
       window.localStorage.setItem("gamebuddy:locale", locale);
       onResult(result);
     } catch (submitError) {
@@ -130,6 +136,7 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
             className="w-full rounded-2xl border border-dashed border-ink/20 bg-mist px-4 py-6 text-sm text-ink/70"
           />
           <p className="mt-2 text-xs text-ink/55">{t.screenshotHelp}</p>
+          <p className="mt-2 text-xs leading-6 text-ink/65">公网截图入口需要<Link href="/ops" className="font-semibold text-pine underline">管理员令牌</Link>。截图感知仍是演示占位：按所选游戏使用样例局势，不会真实识别图片。</p>
         </div>
       )}
 
@@ -137,7 +144,7 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || (mode === "screenshot" && !privateAccess)}
         className="inline-flex rounded-full bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-ember/90 disabled:opacity-60"
       >
         {loading ? t.loading : t.submit}

@@ -2,8 +2,10 @@
 
 // 记忆面板，用于读写用户画像并展示近期分析历史。
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { getAnalysisHistory, getUserProfile, saveUserProfile } from "@/lib/api";
+import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import type { AnalysisHistoryItem, Locale, UserProfile } from "@/lib/types";
 
 type Props = {
@@ -23,14 +25,22 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const { health, error: connectionError } = useConnectionStatus();
+  const { hasToken, revision } = useAdminAccess();
+  const privateAccess = health?.mode === "local" || hasToken;
 
   useEffect(() => {
-    if (!profile.user_id) {
+    setHistoryError(null);
+    if (!profile.user_id || !privateAccess) {
       setHistory([]);
+      setLoadingHistory(false);
       return;
     }
 
     let active = true;
+    setHistory([]);
     setLoadingHistory(true);
     getAnalysisHistory({ userId: profile.user_id, sessionId, limit: 6 })
       .then((items) => {
@@ -38,9 +48,9 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           setHistory(items);
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (active) {
-          setHistory([]);
+          setHistoryError(error instanceof Error ? error.message : "历史读取失败，请重试。");
         }
       })
       .finally(() => {
@@ -52,7 +62,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
     return () => {
       active = false;
     };
-  }, [profile.user_id, sessionId]);
+  }, [profile.user_id, sessionId, privateAccess, revision, retry]);
 
   async function handleSaveProfile() {
     if (!profile.user_id) {
@@ -66,8 +76,8 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
       const saved = await saveUserProfile(profile);
       onProfileChange(saved);
       setMessage(locale === "zh" ? "画像已保存。" : "Profile saved.");
-    } catch {
-      setMessage(locale === "zh" ? "保存画像失败。" : "Failed to save profile.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : locale === "zh" ? "保存画像失败。" : "Failed to save profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -92,9 +102,17 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
         notes: loaded.notes ?? [],
       });
       setMessage(locale === "zh" ? "画像已载入。" : "Profile loaded.");
-    } catch {
-      setMessage(locale === "zh" ? "载入画像失败。" : "Failed to load profile.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : locale === "zh" ? "载入画像失败。" : "Failed to load profile.");
     }
+  }
+
+  if (!privateAccess) {
+    return <section className="rounded-3xl border border-ink/10 bg-white/80 p-6 shadow-card">
+      <h3 className="text-xl font-semibold">个人偏好与历史</h3>
+      <p className="mt-3 text-sm leading-7 text-ink/65">{connectionError ? "暂时无法读取后端连接状态，请先重试上方连接检查。" : health?.mode === "public" ? "公开演示不保存匿名用户的个人历史。画像、历史和反馈数据仅向管理员开放。" : "确认后端连接后，可使用本地个人记忆或管理员入口。"}</p>
+      <Link href="/ops" className="mt-4 inline-flex rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white">管理员访问</Link>
+    </section>;
   }
 
   return (
@@ -215,9 +233,13 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           {loadingHistory ? <span className="text-xs text-ink/55">{locale === "zh" ? "加载中..." : "Loading..."}</span> : null}
         </div>
         <div className="mt-3 grid gap-3">
-          {history.length === 0 ? (
+          {historyError ? (
+            <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-800"><p role="alert">{historyError}</p><button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-3 font-semibold underline">重试读取历史</button></div>
+          ) : loadingHistory ? (
+            <p className="p-4 text-sm text-ink/60">{locale === "zh" ? "正在读取历史…" : "Loading history…"}</p>
+          ) : history.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-ink/15 bg-mist p-4 text-sm text-ink/60">
-              {locale === "zh" ? "还没有可展示的历史记录。" : "No history available yet."}
+              {profile.user_id ? locale === "zh" ? "还没有可展示的历史记录。" : "No history available yet." : locale === "zh" ? "填写 User ID 后读取对应历史。" : "Enter a User ID to load history."}
             </div>
           ) : (
             history.map((item) => (

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import analysis, health, memory, ops
 from app.core.config import settings
+from app.security import RequestBodyLimitMiddleware
 
 # FastAPI 应用的总入口。
 # 这里负责：
@@ -22,6 +23,7 @@ app = FastAPI(
 # 因为前端和后端在本地开发时通常运行在不同端口上，
 # 浏览器会把它们视为不同源；如果这里不放开允许的来源，
 # 前端页面虽然能打开，但向后端发请求时会被浏览器直接拦截。
+app.add_middleware(RequestBodyLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
