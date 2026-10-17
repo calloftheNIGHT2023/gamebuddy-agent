@@ -24,6 +24,32 @@ _DEFAULT_SYSTEM_PROMPT = (
     "After tool use, return valid JSON only, without markdown, in the requested structure."
 )
 
+_TASK_INSTRUCTIONS = {
+    "analysis": (
+        "Analyze the supplied snapshot to recommend the next tactical direction. "
+        "Use the user's question to set priorities; separate observations from uncertain predictions."
+    ),
+    "qa": (
+        "Answer the user's knowledge question using the supplied and tool-retrieved sources. "
+        "Knowledge sources explain general principles and must never be treated as observed match events. "
+        "If no sources support the answer, explain the missing evidence rather than inventing facts."
+    ),
+    "build": (
+        "Create a progression plan that directly addresses the user's question, current goal and build focus. "
+        "Use the exact available_resources amounts as budget constraints, prioritizing achievable upgrades "
+        "and explicitly addressing zero resources. Put the actionable ordered plan in next_steps and "
+        "explain priorities and tradeoffs in summary. If upgrade prices or availability are missing, "
+        "do not invent purchase quantities or claim an optimal budget allocation."
+    ),
+    "review": (
+        "Review the supplied match and answer the user's specific review question. "
+        "Distinguish events explicitly present in recent_events, notes or state from hypotheses about mistakes. "
+        "Put evidence-bounded hypotheses in review_report.likely_mistakes and concrete review actions "
+        "in review_report.recommended_actions; do not infer causation from a snapshot or turn general "
+        "knowledge into an event that supposedly occurred."
+    ),
+}
+
 
 class _AnalysisContent(BaseModel):
     """Validate provider content before it can replace the working rule result."""
@@ -58,7 +84,11 @@ def maybe_enhance_analysis(
     user_profile: UserProfile | None = None,
     session_id: str | None = None,
     question_only_retrieval: bool = False,
+    task: str = "analysis",
+    allow_llm: bool = True,
 ) -> AnalysisResponse:
+    if task not in _TASK_INSTRUCTIONS:
+        raise ValueError("Unsupported analysis task")
     # Retrieval is part of every analysis, including offline and unconfigured runs.
     started = perf_counter()
     query = question if question_only_retrieval else retrieval_query(question, extracted_state)
@@ -79,20 +109,28 @@ def maybe_enhance_analysis(
         **grounded.metadata,
         "knowledge_matches": matches,
         "retrieval_status": retrieval_status,
+        "initial_knowledge_matches": matches,
+        "initial_retrieval_status": retrieval_status,
         "retrieval_query": query,
         "retrieval_duration_ms": retrieval_ms,
         "llm_duration_ms": 0.0,
         "llm_status": "disabled",
+        "llm_disabled_reason": "",
         "fallback_reason": "",
         "tool_trace": [],
         "function_calling_used": 0,
         "tools_used": "none",
         "policy_id": str(policy.get("id", "default")),
     }
+    if not allow_llm:
+        grounded.metadata["llm_disabled_reason"] = "request_constraint"
+        return grounded
     if offline_mode.get():
         grounded.metadata["eval_offline"] = 1
+        grounded.metadata["llm_disabled_reason"] = "evaluation_offline"
         return grounded
     if not settings.has_openrouter:
+        grounded.metadata["llm_disabled_reason"] = "not_configured"
         return grounded
 
     context = ToolRuntimeContext(
@@ -102,8 +140,9 @@ def maybe_enhance_analysis(
     started = perf_counter()
     result = _request_analysis(
         game=game, question=question, extracted_state=extracted_state,
-        heuristic=grounded, context=context,
+        heuristic=grounded, context=context, task=task,
     )
+    final_matches = _merge_knowledge_evidence(matches, result.tool_trace, game=game)
     grounded.metadata.update({
         "llm_provider": "openrouter",
         "llm_model": settings.openrouter_model,
@@ -113,7 +152,13 @@ def maybe_enhance_analysis(
         "tool_trace": result.tool_trace,
         "function_calling_used": 1 if result.tool_trace else 0,
         "tools_used": summarize_tool_names(result.tool_trace),
+        "knowledge_matches": final_matches,
+        "retrieval_status": "matched" if final_matches else retrieval_status,
     })
+    if final_matches and not matches:
+        reference = final_matches[0]
+        label = "本地知识参考" if any("\u3400" <= char <= "\u9fff" for char in question) else "Local knowledge reference"
+        grounded.beginner_explanation += f"\n\n{label} ({reference['path']}): {reference['content']}"
     if result.payload is None:
         return grounded
     try:
@@ -125,6 +170,40 @@ def maybe_enhance_analysis(
         **content.model_dump(),
         metadata={**grounded.metadata, "llm_status": "enhanced", "fallback_reason": ""},
     )
+
+
+def _merge_knowledge_evidence(
+    initial: list[dict[str, Any]], tool_trace: list[dict[str, Any]], *, game: str,
+) -> list[dict[str, Any]]:
+    """Unify actual knowledge evidence without rewriting the trace or snapshots.
+
+    Initial ranking is preserved; new tool sources follow execution order. A
+    repeated JSON leaf is one citation, even when queried several different ways.
+    Profile results and failed tool calls are never accepted as knowledge.
+    """
+    candidates = list(initial)
+    for call in tool_trace:
+        if call.get("name") != "get_game_knowledge" or call.get("status") != "ok":
+            continue
+        result = call.get("result")
+        if not isinstance(result, dict) or result.get("ok") is not True or result.get("game") != game:
+            continue
+        matches = result.get("matches")
+        if isinstance(matches, list):
+            candidates.extend(matches)
+    merged: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for match in candidates:
+        if not isinstance(match, dict) or any(
+            not isinstance(match.get(key), str) or not match[key].strip()
+            for key in ("source", "path", "content")
+        ):
+            continue
+        identity = (match["source"], match["path"])
+        if identity not in seen:
+            seen.add(identity)
+            merged.append(dict(match))
+    return merged
 
 
 def _system_prompt() -> str:
@@ -157,8 +236,9 @@ def _request_analysis(
     extracted_state: dict[str, Any],
     heuristic: AnalysisResponse,
     context: ToolRuntimeContext,
+    task: str = "analysis",
 ) -> RequestResult:
-    prompt = _build_prompt(game=game, question=question, extracted_state=extracted_state, heuristic=heuristic)
+    prompt = _build_prompt(game=game, question=question, extracted_state=extracted_state, heuristic=heuristic, task=task)
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
@@ -273,6 +353,7 @@ def _parse_tool_arguments(raw_arguments: str) -> dict[str, Any]:
 
 def _build_prompt(
     *, game: str, question: str, extracted_state: dict[str, Any], heuristic: AnalysisResponse,
+    task: str = "analysis",
 ) -> str:
     # Runtime diagnostics and profiles are not part of the draft to be rewritten.
     draft = heuristic.model_dump(exclude={"metadata"})
@@ -281,6 +362,10 @@ def _build_prompt(
 Analyze this game state and return JSON with exactly these top-level keys:
 summary, direction_prediction, tactical_advice, beginner_explanation,
 risks_or_uncertainties, next_steps, review_report.
+
+Task: {task}
+Task instructions:
+{_TASK_INSTRUCTIONS[task]}
 
 Rules:
 - direction_prediction: current_phase, best_direction, why_now, avoid_direction, confidence.

@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from app.models.schemas import AnalysisResponse, AssistantResponse, SupportedGame, UserProfile
 from app.services import ops
-from app.services.assistant import compose_answer, qa_draft
+from app.services.assistant import compose_answer, has_no_resources, qa_draft
 from app.services.game_packs import analyze_game, build_json_perception, build_screenshot_perception
 from app.services.mongo_store import mongo_store
 from app.services.openrouter_client import maybe_enhance_analysis
@@ -79,9 +79,13 @@ class GameBuddyOrchestrator:
                 response = maybe_enhance_analysis(
                     game=game, question=question, extracted_state=state, heuristic=qa_draft(game, question, state),
                     user_profile=resolved, session_id=session_id, question_only_retrieval=True,
+                    task=task,
                 )
             else:
-                response = analyze_game(perception, question, user_profile=resolved, session_id=session_id)
+                response = analyze_game(
+                    perception, question, user_profile=resolved, session_id=session_id, task=task,
+                    allow_llm=not (task == "build" and has_no_resources(state)),
+                )
             step("analysis", began, {"llm_status": response.metadata.get("llm_status", "disabled")})
             trace["steps"].append({
                 "name": "retrieval", "duration_ms": response.metadata.get("retrieval_duration_ms", 0),

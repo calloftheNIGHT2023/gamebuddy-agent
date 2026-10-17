@@ -67,6 +67,9 @@ def analyze_game(
     question: str,
     user_profile: UserProfile | None = None,
     session_id: str | None = None,
+    *,
+    task: str = "analysis",
+    allow_llm: bool = True,
 ) -> AnalysisResponse:
     # 这里是统一分发入口：
     # 根据 perception.game 选择对应的游戏分析函数。
@@ -89,6 +92,8 @@ def analyze_game(
         heuristic=heuristic,
         user_profile=user_profile,
         session_id=session_id,
+        task=task,
+        allow_llm=allow_llm,
     )
 
 

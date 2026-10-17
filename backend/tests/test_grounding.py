@@ -46,9 +46,10 @@ def disable_live_services(monkeypatch):
     offline_mode.reset(token)
 
 
-def enhance(heuristic, question="怎么安全换人？", state=None):
+def enhance(heuristic, question="怎么安全换人？", state=None, **kwargs):
     return llm.maybe_enhance_analysis(
         game=GAME, question=question, extracted_state=state or {}, heuristic=heuristic,
+        **kwargs,
     )
 
 
@@ -143,6 +144,18 @@ def test_offline_eval_never_contacts_configured_provider(monkeypatch, heuristic)
     assert result.metadata["llm_status"] == "disabled"
     assert result.metadata["eval_offline"] == 1
     assert result.metadata["knowledge_matches"]
+
+
+def test_request_constraint_retrieves_without_contacting_configured_provider(monkeypatch, heuristic):
+    monkeypatch.setattr(llm.settings, "openrouter_api_key", "test-secret-key")
+    monkeypatch.setattr(llm.httpx, "Client", lambda **kwargs: pytest.fail("Constrained request contacted the provider"))
+    result = enhance(heuristic, task="build", allow_llm=False)
+    assert result.metadata["llm_status"] == "disabled"
+    assert result.metadata["llm_disabled_reason"] == "request_constraint"
+    assert result.metadata["llm_duration_ms"] == 0
+    assert result.metadata["knowledge_matches"]
+    assert "eval_offline" not in result.metadata
+    assert result.metadata["tool_trace"] == []
 
 
 @pytest.mark.parametrize("arguments,code", [
@@ -276,3 +289,116 @@ def test_invalid_analysis_does_not_replace_rule_output(monkeypatch, heuristic):
     result = enhance(heuristic)
     assert result.summary == heuristic.summary
     assert result.metadata["fallback_reason"] == "invalid_analysis_schema"
+
+
+def test_tool_knowledge_becomes_final_evidence_after_initial_no_match(monkeypatch, heuristic):
+    requests = mock_provider(monkeypatch, [{"tool_calls": [tool_call()]}, final_message(heuristic)])
+    result = enhance(heuristic, question="quantum-zxqv-unicorn", task="qa", question_only_retrieval=True)
+    assert len(requests) == 2
+    assert result.metadata["initial_retrieval_status"] == "no_match"
+    assert result.metadata["initial_knowledge_matches"] == []
+    assert result.metadata["retrieval_status"] == "matched"
+    tool_matches = result.metadata["tool_trace"][0]["result"]["matches"]
+    assert tool_matches
+    assert result.metadata["knowledge_matches"] == tool_matches
+    assert result.metadata["llm_status"] == "enhanced"
+
+
+def test_initial_and_repeated_tool_sources_are_deduplicated_without_changing_trace(monkeypatch, heuristic):
+    mock_provider(monkeypatch, [
+        {"tool_calls": [tool_call(identifier="first"), tool_call(identifier="repeat")]},
+        final_message(heuristic),
+    ])
+    result = enhance(heuristic)
+    matches = result.metadata["knowledge_matches"]
+    initial = result.metadata["initial_knowledge_matches"]
+    trace = result.metadata["tool_trace"]
+    assert initial
+    assert trace[0]["result"]["matches"] == trace[1]["result"]["matches"]
+    assert matches[: len(initial)] == initial
+    identities = [(match["source"], match["path"]) for match in matches]
+    assert len(identities) == len(set(identities))
+    expected_identities = {
+        (match["source"], match["path"])
+        for match in [*initial, *trace[0]["result"]["matches"], *trace[1]["result"]["matches"]]
+    }
+    assert set(identities) == expected_identities
+    # Execution evidence still contains both original tool responses for audit.
+    assert len(trace) == 2
+    assert len(trace[0]["result"]["matches"]) > 0
+
+
+def test_failed_tools_and_profile_results_do_not_become_knowledge(monkeypatch, heuristic):
+    original_execute = llm.execute_tool_call
+
+    def tool_with_unrelated_matches(name, arguments, context):
+        result = original_execute(name, arguments, context)
+        # Even if an adapter adds a matches field, a profile/error is not evidence.
+        result["matches"] = [{"source": "profile-or-error", "path": "untrusted", "content": "not a knowledge source", "score": 1.0}]
+        return result
+
+    monkeypatch.setattr(llm, "execute_tool_call", tool_with_unrelated_matches)
+    mock_provider(monkeypatch, [{"tool_calls": [
+        tool_call(arguments={"game": GAME, "topic": "pivot", "extra": True}),
+        tool_call("get_user_profile", {}, "profile"),
+        tool_call("unknown_tool", {}, "unknown"),
+    ]}, final_message(heuristic)])
+    result = enhance(heuristic, question="quantum-zxqv-unicorn", task="qa")
+    assert result.metadata["knowledge_matches"] == []
+    assert result.metadata["retrieval_status"] == "no_match"
+    assert [call["status"] for call in result.metadata["tool_trace"]] == ["error", "ok", "error"]
+    assert all(call["result"]["matches"] for call in result.metadata["tool_trace"])
+
+
+@pytest.mark.parametrize("response,reason", [
+    (httpx.ReadTimeout("private provider diagnostic"), "provider_timeout"),
+    ({"content": "{}"}, "invalid_analysis_schema"),
+])
+def test_successful_tool_evidence_survives_later_provider_failure(monkeypatch, heuristic, response, reason):
+    mock_provider(monkeypatch, [{"tool_calls": [tool_call()]}, response])
+    result = enhance(heuristic, question="quantum-zxqv-unicorn", task="qa")
+    assert result.metadata["llm_status"] == "fallback"
+    assert result.metadata["fallback_reason"] == reason
+    assert result.metadata["initial_knowledge_matches"] == []
+    assert result.metadata["initial_retrieval_status"] == "no_match"
+    assert result.metadata["retrieval_status"] == "matched"
+    assert result.metadata["knowledge_matches"] == result.metadata["tool_trace"][0]["result"]["matches"]
+    assert result.summary == heuristic.summary
+    assert "Local knowledge reference" in result.beginner_explanation
+    assert result.metadata["knowledge_matches"][0]["content"] in result.beginner_explanation
+
+
+@pytest.mark.parametrize("task,expected_instruction", [
+    ("analysis", "recommend the next tactical direction"),
+    ("qa", "must never be treated as observed match events"),
+    ("build", "do not invent purchase quantities or claim an optimal budget allocation"),
+    ("review", "Distinguish events explicitly present in recent_events"),
+])
+def test_task_specific_instructions_reach_provider(monkeypatch, heuristic, task, expected_instruction):
+    requests = mock_provider(monkeypatch, [final_message(heuristic)])
+    state = {"available_resources": {"gold": 37, "upgrade_stones": 0}, "recent_events": ["Player entered river at 23:40."]}
+    question = "我的金币预算37，应该优先处理什么？"
+    result = enhance(heuristic, question=question, state=state, task=task)
+    prompt = requests[0]["messages"][1]["content"]
+    assert f"Task: {task}" in prompt
+    assert expected_instruction in prompt
+    assert question in prompt
+    assert json.dumps(state, ensure_ascii=False) in prompt
+    if task == "build":
+        assert "exact available_resources amounts as budget constraints" in prompt
+        assert "upgrade prices or availability are missing" in prompt
+        assert "user's question" in prompt
+    assert result.metadata["llm_status"] == "enhanced"
+
+
+def test_evidence_with_equal_paths_in_different_sources_is_preserved():
+    initial = [{"source": "first.json", "path": "glossary.term", "content": "First definition", "score": 1.0}]
+    trace = [{"name": "get_game_knowledge", "status": "ok", "result": {
+        "ok": True, "game": GAME, "matches": [
+            *initial,
+            {"source": "second.json", "path": "glossary.term", "content": "Second definition", "score": 1.0},
+        ],
+    }}]
+    assert len(llm._merge_knowledge_evidence(initial, trace, game=GAME)) == 2
+    assert len(initial) == 1
+    assert len(trace[0]["result"]["matches"]) == 2

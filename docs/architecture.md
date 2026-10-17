@@ -7,8 +7,8 @@
 3. `GameBuddyOrchestrator` 在请求开始时固定一个不可变 Policy，通过 ContextVar 隔离并发请求，结束时恢复上下文。
 4. 画像从 SQLite 合并；结构化分析运行对应 `game_packs.py` 规则。QA 使用知识问答草稿，避免把演示状态误当作真实观测。
 5. `retrieval.py` 将知识包 JSON 叶子作为可引用文档，用 TF-IDF 词项与中文概念别名检索。每项返回 source/path/score。QA 仅按问题检索，局势分析可加入已提供状态；无命中不填充随机文档。
-6. 无 Key 直接使用规则和检索依据；有 Key 时 OpenRouter 可执行两轮 Function Calling。工具白名单、严格参数、最多四次调用、provider schema 和超时边界保证失败可降级。
-7. 输出统一为 `AnalysisResponse`。助手在此基础上提供引用问答、受资源约束的 RPG 养成、引用事件并保留因果不确定性的复盘；Policy 的 max_next_steps 实际约束离线行动列表。
+6. 无 Key 直接使用规则和检索依据；有 Key 时 OpenRouter 可执行两轮 Function Calling。任务类型实际进入模型提示词。成功知识工具的新来源与初次检索按 source/path 合并去重，失败工具和画像不会成为知识证据；即使最终模型超时或校验失败，已取得的来源仍供本地回答引用。
+7. 输出统一为 `AnalysisResponse`。助手提供引用问答、受资源约束的 RPG 养成、引用事件并保留因果不确定性的复盘。养成保留通过结构校验的模型摘要和行动计划，明确购买数量及预算可行性未验证；已知资源全部为零时跳过模型请求，整个回答与可训练字段统一为无成本行动。Policy 的 max_next_steps 约束最终行动列表。
 8. 保存画像与历史，并记录输入、输出、检索/工具结果、模型状态、版本和实测耗时的 Trace。
 
 `backend/app/agents/` 是早期原型模块，当前运行路径不导入该目录；现行入口为上述 services + orchestrator。截图接口仍明确使用占位状态，不执行视觉识别。
