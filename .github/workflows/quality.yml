@@ -45,5 +45,7 @@ jobs:
         working-directory: frontend
       - run: npm run test:api
         working-directory: frontend
+      - run: npm run test:games
+        working-directory: frontend
       - run: npm run build
         working-directory: frontend

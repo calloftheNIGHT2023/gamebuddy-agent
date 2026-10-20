@@ -66,7 +66,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
 
   async function handleSaveProfile() {
     if (!profile.user_id) {
-      setMessage(locale === "zh" ? "请先填写 user id。" : "Add a user id first.");
+      setMessage(locale === "zh" ? "请先填写 User ID。" : "Add a user id first.");
       return;
     }
 
@@ -75,9 +75,9 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
     try {
       const saved = await saveUserProfile(profile);
       onProfileChange(saved);
-      setMessage(locale === "zh" ? "画像已保存。" : "Profile saved.");
+      setMessage(locale === "zh" ? "档案已保存。" : "Profile saved.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : locale === "zh" ? "保存画像失败。" : "Failed to save profile.");
+      setMessage(error instanceof Error ? error.message : locale === "zh" ? "保存档案失败。" : "Failed to save profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -85,7 +85,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
 
   async function handleLoadProfile() {
     if (!profile.user_id) {
-      setMessage(locale === "zh" ? "请先填写 user id。" : "Add a user id first.");
+      setMessage(locale === "zh" ? "请先填写 User ID。" : "Add a user id first.");
       return;
     }
 
@@ -93,7 +93,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
     try {
       const loaded = await getUserProfile(profile.user_id);
       if (!loaded) {
-        setMessage(locale === "zh" ? "未找到画像记录。" : "No saved profile found.");
+        setMessage(locale === "zh" ? "还没有这个玩家的档案。" : "No saved profile found.");
         return;
       }
       onProfileChange({
@@ -101,17 +101,17 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
         goals: loaded.goals ?? [],
         notes: loaded.notes ?? [],
       });
-      setMessage(locale === "zh" ? "画像已载入。" : "Profile loaded.");
+      setMessage(locale === "zh" ? "档案已载入。" : "Profile loaded.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : locale === "zh" ? "载入画像失败。" : "Failed to load profile.");
+      setMessage(error instanceof Error ? error.message : locale === "zh" ? "载入档案失败。" : "Failed to load profile.");
     }
   }
 
   if (!privateAccess) {
     return <section className="gb-panel p-5 sm:p-6">
       <div className="flex items-center justify-between border-b border-ink/20 pb-3"><p className="gb-kicker">{locale === "zh" ? "玩家档案" : "Player file"}</p><span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/65">PRIVATE</span></div>
-      <h3 className="mt-5 text-xl font-semibold">{locale === "zh" ? "个人偏好与历史" : "Profile and history"}</h3>
-      <p className="mt-3 text-sm leading-7 text-ink/65">{connectionError ? (locale === "zh" ? "暂时无法读取后端连接状态，请先重试上方连接检查。" : "The backend connection status is unavailable. Retry the connection check above.") : health?.mode === "public" ? (locale === "zh" ? "公开演示不保存匿名用户的个人历史。画像、历史和反馈数据仅向管理员开放。" : "The public demo does not save anonymous history. Profiles, history and feedback are private administrator features.") : (locale === "zh" ? "确认后端连接后，可使用本地个人记忆或管理员入口。" : "Connect the backend to use local memory or administrator access.")}</p>
+      <h3 className="mt-5 text-xl font-semibold">{locale === "zh" ? "玩家档案与历史" : "Profile and history"}</h3>
+      <p className="mt-3 text-sm leading-7 text-ink/65">{connectionError ? (locale === "zh" ? "服务尚未连接，请重试连接。" : "The service is disconnected. Try reconnecting.") : health?.mode === "public" ? (locale === "zh" ? "玩家档案和历史记录需管理员访问。" : "Player profiles and history require administrator access.") : (locale === "zh" ? "连接服务后可读取档案与历史。" : "Connect the service to read profiles and history.")}</p>
       <Link href="/ops" className="gb-button mt-5 inline-flex items-center gap-5 border-ink bg-ink px-4 py-3 text-sm font-semibold text-white">{locale === "zh" ? "管理员访问" : "Administrator access"}<span aria-hidden="true">↗</span></Link>
     </section>;
   }
@@ -122,7 +122,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
         <div>
           <p className="gb-kicker">{locale === "zh" ? "玩家档案" : "Player file"}</p>
           <h3 className="mt-2 text-xl font-semibold text-ink">
-            {locale === "zh" ? "个人偏好与历史" : "Profile and history"}
+            {locale === "zh" ? "玩家档案与历史" : "Profile and history"}
           </h3>
         </div>
         <div className="max-w-full border-l-2 border-ember pl-3"><p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">SESSION</p><p className="mt-1 break-all font-mono text-[10px] text-ink/65">{sessionId}</p></div>
@@ -215,14 +215,14 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           disabled={savingProfile}
           className="gb-button border-ink bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {savingProfile ? (locale === "zh" ? "保存中..." : "Saving...") : locale === "zh" ? "保存画像" : "Save profile"}
+          {savingProfile ? (locale === "zh" ? "保存中..." : "Saving...") : locale === "zh" ? "保存档案" : "Save profile"}
         </button>
         <button
           type="button"
           onClick={handleLoadProfile}
           className="gb-button border-ink bg-white px-4 py-3 text-sm font-semibold text-ink hover:bg-gold/30"
         >
-          {locale === "zh" ? "载入画像" : "Load profile"}
+          {locale === "zh" ? "载入档案" : "Load profile"}
         </button>
       </div>
 
@@ -230,7 +230,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
 
       <div className="mt-6">
         <div className="flex items-center justify-between gap-3 border-y border-ink bg-mist px-3 py-3">
-          <h4 className="text-sm font-semibold text-ink">{locale === "zh" ? "最近历史" : "Recent history"}</h4>
+          <h4 className="text-sm font-semibold text-ink">{locale === "zh" ? "最近战局" : "Recent history"}</h4>
           {loadingHistory ? <span className="text-xs text-ink/65">{locale === "zh" ? "加载中..." : "Loading..."}</span> : null}
         </div>
         <div className="divide-y divide-ink/20">
@@ -240,7 +240,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
             <p className="p-4 text-sm text-ink/65">{locale === "zh" ? "正在读取历史…" : "Loading history…"}</p>
           ) : history.length === 0 ? (
             <div className="border-b border-dashed border-ink/25 px-3 py-6 text-sm leading-7 text-ink/65">
-              {profile.user_id ? locale === "zh" ? "还没有可展示的历史记录。" : "No history available yet." : locale === "zh" ? "填写 User ID 后读取对应历史。" : "Enter a User ID to load history."}
+              {profile.user_id ? locale === "zh" ? "还没有战局记录。" : "No history available yet." : locale === "zh" ? "填写 User ID 后读取对应历史。" : "Enter a User ID to load history."}
             </div>
           ) : (
             history.map((item) => (

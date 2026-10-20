@@ -1,6 +1,6 @@
 "use client";
 
-// 分析结果面板，用于展示总结、方向判断和复盘信息。
+// 分析结果面板，用于展示总结、战局判断和复盘信息。
 import Link from "next/link";
 import { useState } from "react";
 
@@ -45,7 +45,7 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
         correction: correction.trim() || null,
         tags: correction.trim() ? ["user-correction"] : [],
       });
-      setFeedbackStatus(locale === "zh" ? "反馈已保存，可用于后续 SFT / 偏好数据整理。" : "Feedback saved for later SFT / preference data export.");
+      setFeedbackStatus(locale === "zh" ? "反馈已保存。" : "Feedback saved.");
     } catch (error) {
       setFeedbackStatus(error instanceof Error ? error.message : locale === "zh" ? "反馈保存失败。" : "Failed to save feedback.");
     } finally {
@@ -76,7 +76,7 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
       <section className="gb-panel overflow-hidden">
         <div className="flex items-start justify-between gap-4 border-b border-ink/20 bg-gold/35 p-5">
           <div>
-            <p className="gb-kicker">{locale === "zh" ? "方向判断" : "Direction prediction"}</p>
+            <p className="gb-kicker">{locale === "zh" ? "战局判断" : "Position read"}</p>
             <h4 className="mt-2 text-xl font-semibold leading-relaxed text-ink">{result.direction_prediction.current_phase}</h4>
           </div>
           <span className="shrink-0 border border-ink/35 bg-white px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-ink">
@@ -90,7 +90,7 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
             <p className="mt-3 text-sm leading-7 text-ink/65">{result.direction_prediction.why_now}</p>
           </article>
           <article className="border-t border-ink/20 bg-mist p-5 lg:border-l lg:border-t-0">
-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-ember">× {locale === "zh" ? "避免路线" : "Avoid this line"}</p>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-ember">× {locale === "zh" ? "尽量避免" : "Avoid"}</p>
             <p className="mt-3 text-base leading-7 text-ink/90">{result.direction_prediction.avoid_direction}</p>
           </article>
         </div>
@@ -108,15 +108,15 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
       </section>}
 
       {/* 风险与下一步：把“不确定性”和“可执行动作”并排展示，便于用户快速消化。 */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="gb-panel p-5">
+      <div className={`grid gap-4 ${result.risks_or_uncertainties.length > 0 ? "lg:grid-cols-2" : ""}`}>
+        {result.risks_or_uncertainties.length > 0 && <section className="gb-panel p-5">
           <h4 className="border-b border-ink/20 pb-3 text-base font-semibold text-ink">{t.risks}</h4>
           <ul className="mt-4 space-y-3 text-sm leading-7 text-ink/70">
             {result.risks_or_uncertainties.map((item) => (
               <li key={item} className="flex gap-3"><span aria-hidden="true" className="font-mono text-ember">!</span><span>{item}</span></li>
             ))}
           </ul>
-        </section>
+        </section>}
         <section className="gb-panel p-5">
           <h4 className="border-b border-ink/20 pb-3 text-base font-semibold text-ink">{t.nextSteps}</h4>
           <ol className="mt-4 space-y-3 text-sm leading-7 text-ink/70">
@@ -138,9 +138,9 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
       <section className="gb-panel p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="gb-kicker">{locale === "zh" ? "编辑批注" : "Editor's annotations"}</p>
+            <p className="gb-kicker">{locale === "zh" ? "反馈" : "Feedback"}</p>
             <h4 className="mt-2 text-base font-semibold text-ink">
-              {locale === "zh" ? "回答质量回溯" : "Response quality feedback"}
+              {locale === "zh" ? "这条建议有用吗？" : "Was this useful?"}
             </h4>
           </div>
           <div className="flex gap-2">
@@ -162,14 +162,14 @@ export function AnalysisPanel({ result, locale, sessionId, userProfile }: Props)
             </button>
           </div>
         </div>
-        {!privateAccess && <p className="mt-4 border-l-2 border-ember pl-3 text-xs leading-6 text-ink/65">{locale === "zh" ? <>公开演示不保存匿名反馈。请到<Link href="/ops" className="font-semibold text-ink underline underline-offset-4">管理员入口</Link>登录后标注回答。</> : <>Anonymous feedback is not saved. Sign in through <Link href="/ops" className="font-semibold text-ink underline underline-offset-4">administrator access</Link> to annotate a response.</>}</p>}
+        {!privateAccess && <p className="mt-4 border-l-2 border-ember pl-3 text-xs leading-6 text-ink/65">{locale === "zh" ? <>保存反馈需<Link href="/ops" className="font-semibold text-ink underline underline-offset-4">管理员入口</Link>。</> : <>Saving feedback requires <Link href="/ops" className="font-semibold text-ink underline underline-offset-4">administrator access</Link>.</>}</p>}
         <label htmlFor="analysis-correction" className="sr-only">{locale === "zh" ? "修正意见" : "Response correction"}</label>
         <textarea
           id="analysis-correction"
           value={correction}
           onChange={(event) => setCorrection(event.target.value)}
           rows={3}
-          placeholder={locale === "zh" ? "可选：写下更理想的回答方向或修正意见" : "Optional: describe a better answer or correction"}
+          placeholder={locale === "zh" ? "写下你的打法或修正建议（可选）" : "Your approach or correction (optional)"}
           className="gb-field mt-4 w-full bg-mist px-4 py-3 text-sm text-ink"
         />
         {feedbackStatus ? <p role="status" className="mt-3 text-sm leading-7 text-ink/65">{feedbackStatus}</p> : null}

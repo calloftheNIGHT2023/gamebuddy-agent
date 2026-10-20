@@ -2,9 +2,10 @@
 
 ## 总览
 
-当前 MVP 提供 3 个主要接口：
+主要接口：
 
 - `GET /health`
+- `POST /api/v1/play/analyze`
 - `POST /api/v1/analyze/state`
 - `POST /api/v1/analyze/screenshot`
 - `GET /api/v1/memory/profile/{user_id}`
@@ -15,6 +16,14 @@
 - `GET /api/v1/memory/training-samples`
 
 接口目标是保持简单、稳定、易扩展。
+
+## `POST /api/v1/play/analyze`
+
+分析原创小游戏的当前回合。请求为 `{ "scene": "town" | "river" | "dungeon", "state": ... }`，`state` 由前端 `snapshotGame()` 直接生成，包含 9×6 棋盘上的角色位置、生命、体力、药水、敌人、目标、障碍、出口、胜负状态及最近的回合事件。坐标从 0 开始；页面显示的坐标从 1 开始。
+
+响应沿用 `AnalysisResponse`，包含下一步行动、路线和最近事件复盘。`metadata.game_title`、`scene`、`turn` 对应当前关卡和快照；`metadata.game` 仅保留旧客户端的兼容分类。建议使用与小游戏一致的移动、射程、伤害、恢复和胜负规则，不调用外部模型。移动后重新提交快照即可获得新一回合的建议。
+
+该接口支持公开匿名访问。匿名分析不读写私人记录；本地或管理员访问可生成 Ops Trace。非法坐标、资源、事件顺序或不一致的终局状态返回 422。
 
 ## `GET /health`
 

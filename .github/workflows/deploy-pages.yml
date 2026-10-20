@@ -46,6 +46,7 @@ jobs:
           npm run lint
           npm run typecheck
           npm run test:api
+          npm run test:games
 
       - name: Build static site
         working-directory: frontend

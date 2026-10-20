@@ -12,12 +12,12 @@ export function AdminAccess() {
   const [error, setError] = useState<string | null>(null);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(null); setMessage(null);
-    try { saveAdminToken(token); setToken(""); setMessage("令牌已保存到当前标签页，正在重新请求管理数据；能否访问由后端验证。"); }
+    try { saveAdminToken(token); setToken(""); setMessage("令牌已保存，正在连接。"); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "令牌保存失败。"); }
   }
   function clear() {
     setError(null); setMessage(null);
-    try { clearAdminToken(); setToken(""); setMessage("管理员令牌已清除。公开游戏助手仍可使用。"); }
+    try { clearAdminToken(); setToken(""); setMessage("令牌已清除。"); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "令牌清除失败。"); }
   }
   if (health?.mode === "local" && !hasToken) return null;
@@ -28,7 +28,7 @@ export function AdminAccess() {
         <span className="font-normal text-ink/65">{health?.mode === "local" ? "本地无需令牌" : hasToken ? "已保存会话令牌 / 管理" : "未登录 / 展开"}</span>
       </summary>
       <div className="border-t border-ink/20 p-4">
-        <p className="max-w-3xl text-xs leading-6 text-ink/65">公网运行记录、策略、评测、个人记忆与导出仅向管理员开放。令牌仅保存在当前标签页的会话存储中，只发送给已配置的 API；可随时清除。</p>
+        <p className="max-w-3xl text-xs leading-6 text-ink/65">用于读取玩家档案、历史与管理数据。令牌保存在当前标签页，可随时清除。</p>
         <form onSubmit={submit} className="mt-4 flex flex-wrap items-end gap-2">
           <label className="min-w-48 flex-1 text-xs font-semibold">管理员令牌
             <input type="password" autoComplete="off" spellCheck={false} maxLength={4096} required value={token} onChange={(event) => setToken(event.target.value)} placeholder="由服务维护者提供" className="gb-field mt-1.5 w-full border border-ink/30 bg-[#f7f6f1] px-3 py-2.5 text-sm font-normal" />
@@ -36,7 +36,7 @@ export function AdminAccess() {
           <button type="submit" className="gb-button border border-ink bg-ink px-4 py-2.5 text-xs font-semibold text-white">保存并连接 ↗</button>
           <button type="button" onClick={clear} className="border border-ink/25 px-4 py-2.5 text-xs font-semibold">清除令牌</button>
         </form>
-        {health?.private_access === "disabled" && <p className="mt-3 border-l-2 border-[#f05a32] pl-3 text-xs leading-6 text-ink/70">当前服务尚未配置管理员令牌，输入令牌也无法启用管理功能。请由服务维护者完成后端配置。</p>}
+        {health?.private_access === "disabled" && <p className="mt-3 border-l-2 border-[#f05a32] pl-3 text-xs leading-6 text-ink/70">管理员入口未配置，请联系维护者。</p>}
         {message && <p role="status" className="mt-3 text-xs leading-6 text-ink">{message}</p>}
         {error && <p role="alert" className="mt-3 text-xs leading-6 text-[#ab351a]">{error}</p>}
       </div>

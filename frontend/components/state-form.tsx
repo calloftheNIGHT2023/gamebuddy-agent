@@ -48,7 +48,7 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
         const parsed = JSON.parse(jsonText) as GameState;
         result = await analyzeState(game, question, parsed, privateAccess ? { sessionId, userProfile } : undefined);
       } else {
-        if (!privateAccess) throw new Error(locale === "zh" ? "公网截图分析需要管理员访问。请在 Agent Ops 输入有效令牌，或使用 JSON 局势分析。" : "Public screenshot analysis requires administrator access. Add a valid token in Agent Ops, or use structured analysis.");
+        if (!privateAccess) throw new Error(locale === "zh" ? "导入图片需要管理员访问，也可直接填写局势。" : "Importing images requires administrator access. You can enter the game state instead.");
         if (!file) {
           throw new Error(t.chooseFile);
         }
@@ -72,7 +72,7 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
   return (
     <form onSubmit={handleSubmit} className="gb-panel overflow-hidden" aria-busy={loading}>
       <div className="flex items-center justify-between gap-4 border-b border-ink bg-ink px-5 py-3 text-white">
-        <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em]">{locale === "zh" ? "局势编辑台" : "The situation desk"}</p>
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em]">{locale === "zh" ? "局势分析" : "Game state"}</p>
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-gold">INPUT / 01</span>
       </div>
 
@@ -104,12 +104,12 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/20 bg-mist px-5 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em]"><span className="mr-2 font-mono text-ember">03</span>{locale === "zh" ? "提交局势" : "Supply the state"}</p>
-        <div className="inline-flex border border-ink" role="group" aria-label={locale === "zh" ? "输入方式" : "Input mode"}>
-          <button type="button" onClick={() => setMode("json")} aria-pressed={mode === "json"} className={`px-3 py-2 text-xs font-semibold transition-colors ${mode === "json" ? "bg-ink text-white" : "bg-white text-ink hover:bg-gold/30"}`}>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em]"><span className="mr-2 font-mono text-ember">03</span>{locale === "zh" ? "局势信息" : "Game state"}</p>
+        <div className="inline-flex items-center gap-3" role="group" aria-label={locale === "zh" ? "输入方式" : "Input mode"}>
+          <button type="button" onClick={() => setMode("json")} aria-pressed={mode === "json"} className={`border border-ink px-3 py-2 text-xs font-semibold transition-colors ${mode === "json" ? "bg-ink text-white" : "bg-white text-ink hover:bg-gold/30"}`}>
             {t.formTabs.json}
           </button>
-          <button type="button" onClick={() => setMode("screenshot")} aria-pressed={mode === "screenshot"} className={`border-l border-ink px-3 py-2 text-xs font-semibold transition-colors ${mode === "screenshot" ? "bg-ink text-white" : "bg-white text-ink hover:bg-gold/30"}`}>
+          <button type="button" onClick={() => setMode("screenshot")} aria-pressed={mode === "screenshot"} className={`border-b px-1 py-1 text-xs transition-colors ${mode === "screenshot" ? "border-ink font-bold text-ink" : "border-transparent text-ink/65 hover:border-ink hover:text-ink"}`}>
             {t.formTabs.screenshot}
           </button>
         </div>
@@ -139,15 +139,15 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
             className="w-full border border-dashed border-ink/40 bg-mist px-4 py-6 text-sm text-ink/70 file:mr-4 file:border file:border-ink file:bg-white file:px-3 file:py-2 file:text-xs file:font-semibold file:text-ink"
           />
           <p className="mt-3 text-xs leading-6 text-ink/65">{t.screenshotHelp}</p>
-          <p className="mt-3 border-l-2 border-ember pl-3 text-xs leading-6 text-ink/70">{locale === "zh" ? <>公网截图入口需要<Link href="/ops" className="font-semibold text-ink underline underline-offset-4">管理员令牌</Link>。截图感知仍是演示占位：按所选游戏使用样例局势，不会真实识别图片。</> : <>Public screenshot access requires an <Link href="/ops" className="font-semibold text-ink underline underline-offset-4">administrator token</Link>. This demo uses the selected game&apos;s sample state; it does not recognize image content.</>}</p>
+          <p className="mt-3 border-l-2 border-ember pl-3 text-xs leading-6 text-ink/70">{locale === "zh" ? <>导入图片需<Link href="/ops" className="font-semibold text-ink underline underline-offset-4">管理员令牌</Link>。</> : <>Importing images requires an <Link href="/ops" className="font-semibold text-ink underline underline-offset-4">administrator token</Link>.</>}</p>
         </div>
       )}
 
       {error ? <p role="alert" className="mx-5 mb-5 border-l-2 border-red-700 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p> : null}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink/20 px-5 py-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">{mode === "json" ? "STATE → ANALYSIS" : "IMAGE → DEMO STATE"}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">{mode === "json" ? "STATE → ANALYSIS" : "IMAGE / SAMPLE STATE"}</p>
         <button type="submit" disabled={loading || (mode === "screenshot" && !privateAccess)} className="gb-button inline-flex items-center gap-5 border-ink bg-ember px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:opacity-60">
-          {loading ? t.loading : t.submit}<span aria-hidden="true">↗</span>
+          {loading ? t.loading : mode === "screenshot" ? (locale === "zh" ? "查看样例分析" : "Analyze sample state") : t.submit}<span aria-hidden="true">↗</span>
         </button>
       </div>
     </form>

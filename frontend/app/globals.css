@@ -80,3 +80,11 @@ textarea { resize: vertical; }
 .gb-footer strong { color: #181b1e; }
 @media (max-width: 900px) { .gb-masthead { align-items: flex-start; flex-direction: column; gap: 18px; padding: 22px; } .gb-nav-links { width: 100%; } .gb-nav-link { padding: 8px 10px; } .gb-hero { grid-template-columns: 1fr 1fr; } .gb-hero-copy { padding: 26px; } .gb-hero-heading { font-size: 45px; } .gb-game-grid { gap: 14px; } .gb-game-info { padding: 16px; } .gb-game-info h3 { font-size: 22px; } }
 @media (max-width: 640px) { .gb-nav-links { gap: 2px; } .gb-nav-link { padding: 8px 9px; font-size: 12px; } .gb-nav-link span { display: none; } .gb-nav-play { margin-left: 0; } .gb-issue-line { font-size: 9px; } .gb-hero { grid-template-columns: 1fr; margin-top: 20px; } .gb-hero-copy { padding: 28px 24px; } .gb-hero-heading { font-size: 49px; } .gb-hero-art, .gb-hero-art .gb-art { min-height: 260px; } .gb-marquee { grid-template-columns: 1fr; } .gb-marquee div { padding: 12px 20px; } .gb-marquee div + div { border-left: 0; border-top: 1px solid #181b1e; } .gb-game-grid, .gb-lab-grid { grid-template-columns: 1fr; } .gb-game-choice { display: grid; grid-template-columns: 38% 1fr; } .gb-game-choice .gb-art { aspect-ratio: auto; height: 100%; min-height: 190px; border-bottom: 0; border-right: 1px solid #b9bcb3; } .gb-game-choice[aria-pressed=true] .gb-game-info { box-shadow: inset 4px 0 #df4d28; } .gb-game-info h3 { margin-top: 8px; } .gb-game-open { margin-top: 12px; } .gb-section { margin-top: 34px; } .gb-lab-header h2 { font-size: 29px; } }
+.gb-native-card { min-width: 0; border: 1px solid #b9bcb3; background: white; }
+.gb-native-cover { display: block; border-bottom: 1px solid #b9bcb3; }
+.gb-native-cover .gb-art { aspect-ratio: 2.05; }
+.gb-native-card .gb-button { min-height: 42px; }
+.gb-advanced > summary { list-style: none; font-size: 17px; }
+.gb-advanced > summary::-webkit-details-marker { display: none; }
+.gb-advanced[open] > summary { border-bottom-color: #c34524; }
+@media (max-width: 640px) { .gb-advanced > summary { align-items: flex-start; flex-direction: column; gap: 8px; } }

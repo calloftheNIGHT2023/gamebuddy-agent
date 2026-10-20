@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:api": "node --test tests/api-client.test.cjs"
+    "test:api": "node --test tests/api-client.test.cjs",
+    "test:games": "node --test tests/field-game.test.cjs"
   },
   "dependencies": {
     "next": "14.2.30",
