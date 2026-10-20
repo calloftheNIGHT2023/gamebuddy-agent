@@ -15,6 +15,6 @@ export default function Home() {
     "rpg-build-demo": readFileSync(path.join(process.cwd(), "..", "samples", "game-states", "rpg-mage-build.json"), "utf-8"),
   } satisfies Record<GameKey, string>;
 
-  // 默认语言先给英文，客户端里仍然可以再切换。
-  return <HomeClient samples={samples} initialLocale="en" />;
+  // 默认使用中文；客户端保留 URL 参数和已保存的语言偏好。
+  return <HomeClient samples={samples} initialLocale="zh" />;
 }

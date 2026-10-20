@@ -6,15 +6,16 @@ type Props = {
 
 export function PromptList({ title, prompts }: Props) {
   return (
-    <div className="rounded-3xl border border-white/60 bg-white/70 p-6 shadow-card backdrop-blur">
-      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-ember">{title}</p>
-      <div className="grid gap-2 text-sm text-ink/80 md:grid-cols-2">
-        {prompts.map((prompt) => (
-          <div key={prompt} className="rounded-2xl border border-ink/10 bg-mist px-4 py-3">
-            {prompt}
-          </div>
+    <section className="gb-panel overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-ink bg-gold px-5 py-3"><h3 className="text-sm font-semibold text-ink">{title}</h3><span aria-hidden="true" className="font-mono text-[10px] tracking-[0.12em] text-ink/65">FIELD NOTES</span></div>
+      <ol className="grid text-sm text-ink/80 md:grid-cols-2">
+        {prompts.map((prompt, index) => (
+          <li key={prompt} className="flex items-start gap-4 border-b border-ink/15 px-5 py-4 last:border-b-0 md:odd:border-r">
+            <span aria-hidden="true" className="mt-0.5 font-mono text-xs font-semibold text-ember">{String(index + 1).padStart(2, "0")}</span>
+            <span className="leading-7">{prompt}</span>
+          </li>
         ))}
-      </div>
-    </div>
+      </ol>
+    </section>
   );
 }

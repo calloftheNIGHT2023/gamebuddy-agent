@@ -20,19 +20,21 @@ export function LocaleSwitcher({ locale, label, onLocaleChange }: Props) {
   }
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/75 p-1 shadow-card">
-      <span className="px-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink/60">{label}</span>
+    <div role="group" aria-label={label} className="inline-flex shrink-0 items-stretch border border-ink bg-white">
+      <span className="hidden items-center px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/65 sm:inline-flex">{label}</span>
       <button
         type="button"
         onClick={() => setLocale("en")}
-        className={`rounded-full px-3 py-2 text-sm font-semibold ${locale === "en" ? "bg-ink text-white" : "text-ink"}`}
+        aria-pressed={locale === "en"}
+        className={`border-ink px-3 py-2 font-mono text-xs font-semibold transition-colors sm:border-l ${locale === "en" ? "bg-gold text-ink" : "text-ink hover:bg-mist"}`}
       >
         EN
       </button>
       <button
         type="button"
         onClick={() => setLocale("zh")}
-        className={`rounded-full px-3 py-2 text-sm font-semibold ${locale === "zh" ? "bg-ink text-white" : "text-ink"}`}
+        aria-pressed={locale === "zh"}
+        className={`border-l border-ink px-3 py-2 text-xs font-semibold transition-colors ${locale === "zh" ? "bg-gold text-ink" : "text-ink hover:bg-mist"}`}
       >
         中文
       </button>
