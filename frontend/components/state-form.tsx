@@ -48,7 +48,7 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
         const parsed = JSON.parse(jsonText) as GameState;
         result = await analyzeState(game, question, parsed, privateAccess ? { sessionId, userProfile } : undefined);
       } else {
-        if (!privateAccess) throw new Error("公网截图分析需要管理员访问。请在 Agent Ops 输入有效令牌，或使用 JSON 局势分析。");
+        if (!privateAccess) throw new Error(locale === "zh" ? "公网截图分析需要管理员访问。请在 Agent Ops 输入有效令牌，或使用 JSON 局势分析。" : "Public screenshot analysis requires administrator access. Add a valid token in Agent Ops, or use structured analysis.");
         if (!file) {
           throw new Error(t.chooseFile);
         }
@@ -70,17 +70,20 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5 rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-card backdrop-blur"
-    >
-      <div className="grid gap-4 md:grid-cols-2">
+    <form onSubmit={handleSubmit} className="gb-panel overflow-hidden" aria-busy={loading}>
+      <div className="flex items-center justify-between gap-4 border-b border-ink bg-ink px-5 py-3 text-white">
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em]">{locale === "zh" ? "局势编辑台" : "The situation desk"}</p>
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-gold">INPUT / 01</span>
+      </div>
+
+      <div className="grid gap-5 border-b border-ink/20 p-5 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-ink">{t.gameLabel}</label>
+          <label htmlFor="state-game" className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span className="font-mono text-xs text-ember">01</span>{t.gameLabel}</label>
           <select
+            id="state-game"
             value={game}
             onChange={(event) => onGameChange(event.target.value as GameKey)}
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           >
             {Object.entries(gameOptions).map(([key, label]) => (
               <option key={key} value={key}>
@@ -90,65 +93,63 @@ export function StateForm({ locale, game, samples, sessionId, userProfile, onGam
           </select>
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-ink">{t.questionLabel}</label>
+          <label htmlFor="state-question" className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span className="font-mono text-xs text-ember">02</span>{t.questionLabel}</label>
           <input
+            id="state-question"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           />
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => setMode("json")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${mode === "json" ? "bg-ink text-white" : "bg-mist text-ink"}`}
-        >
-          {t.formTabs.json}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("screenshot")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${mode === "screenshot" ? "bg-ink text-white" : "bg-mist text-ink"}`}
-        >
-          {t.formTabs.screenshot}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/20 bg-mist px-5 py-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em]"><span className="mr-2 font-mono text-ember">03</span>{locale === "zh" ? "提交局势" : "Supply the state"}</p>
+        <div className="inline-flex border border-ink" role="group" aria-label={locale === "zh" ? "输入方式" : "Input mode"}>
+          <button type="button" onClick={() => setMode("json")} aria-pressed={mode === "json"} className={`px-3 py-2 text-xs font-semibold transition-colors ${mode === "json" ? "bg-ink text-white" : "bg-white text-ink hover:bg-gold/30"}`}>
+            {t.formTabs.json}
+          </button>
+          <button type="button" onClick={() => setMode("screenshot")} aria-pressed={mode === "screenshot"} className={`border-l border-ink px-3 py-2 text-xs font-semibold transition-colors ${mode === "screenshot" ? "bg-ink text-white" : "bg-white text-ink hover:bg-gold/30"}`}>
+            {t.formTabs.screenshot}
+          </button>
+        </div>
       </div>
 
       {mode === "json" ? (
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink">{t.jsonLabel}</label>
+        <div className="p-5">
+          <label htmlFor="state-json" className="mb-3 block text-sm font-semibold text-ink">{t.jsonLabel}</label>
           <textarea
+            id="state-json"
             value={jsonText}
             onChange={(event) => setJsonText(event.target.value)}
             rows={18}
-            className="w-full rounded-3xl border border-ink/10 bg-[#f7fbfd] px-4 py-4 font-mono text-sm text-ink outline-none"
+            spellCheck={false}
+            className="gb-field w-full resize-y bg-mist px-4 py-4 font-mono text-xs leading-6 text-ink sm:text-sm"
           />
+          <div className="mt-2 flex justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65"><span>JSON / {jsonText.split("\n").length} {locale === "zh" ? "行" : "lines"}</span><span>{locale === "zh" ? "提交时校验" : "Validated on submit"}</span></div>
         </div>
       ) : (
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink">{t.screenshotLabel}</label>
+        <div className="p-5">
+          <label htmlFor="state-screenshot" className="mb-3 block text-sm font-semibold text-ink">{t.screenshotLabel}</label>
           <input
+            id="state-screenshot"
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            className="w-full rounded-2xl border border-dashed border-ink/20 bg-mist px-4 py-6 text-sm text-ink/70"
+            className="w-full border border-dashed border-ink/40 bg-mist px-4 py-6 text-sm text-ink/70 file:mr-4 file:border file:border-ink file:bg-white file:px-3 file:py-2 file:text-xs file:font-semibold file:text-ink"
           />
-          <p className="mt-2 text-xs text-ink/55">{t.screenshotHelp}</p>
-          <p className="mt-2 text-xs leading-6 text-ink/65">公网截图入口需要<Link href="/ops" className="font-semibold text-pine underline">管理员令牌</Link>。截图感知仍是演示占位：按所选游戏使用样例局势，不会真实识别图片。</p>
+          <p className="mt-3 text-xs leading-6 text-ink/65">{t.screenshotHelp}</p>
+          <p className="mt-3 border-l-2 border-ember pl-3 text-xs leading-6 text-ink/70">{locale === "zh" ? <>公网截图入口需要<Link href="/ops" className="font-semibold text-ink underline underline-offset-4">管理员令牌</Link>。截图感知仍是演示占位：按所选游戏使用样例局势，不会真实识别图片。</> : <>Public screenshot access requires an <Link href="/ops" className="font-semibold text-ink underline underline-offset-4">administrator token</Link>. This demo uses the selected game&apos;s sample state; it does not recognize image content.</>}</p>
         </div>
       )}
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
-
-      <button
-        type="submit"
-        disabled={loading || (mode === "screenshot" && !privateAccess)}
-        className="inline-flex rounded-full bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-ember/90 disabled:opacity-60"
-      >
-        {loading ? t.loading : t.submit}
-      </button>
+      {error ? <p role="alert" className="mx-5 mb-5 border-l-2 border-red-700 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p> : null}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink/20 px-5 py-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">{mode === "json" ? "STATE → ANALYSIS" : "IMAGE → DEMO STATE"}</p>
+        <button type="submit" disabled={loading || (mode === "screenshot" && !privateAccess)} className="gb-button inline-flex items-center gap-5 border-ink bg-ember px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:opacity-60">
+          {loading ? t.loading : t.submit}<span aria-hidden="true">↗</span>
+        </button>
+      </div>
     </form>
   );
 }

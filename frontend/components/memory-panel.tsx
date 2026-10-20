@@ -108,23 +108,24 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
   }
 
   if (!privateAccess) {
-    return <section className="rounded-3xl border border-ink/10 bg-white/80 p-6 shadow-card">
-      <h3 className="text-xl font-semibold">个人偏好与历史</h3>
-      <p className="mt-3 text-sm leading-7 text-ink/65">{connectionError ? "暂时无法读取后端连接状态，请先重试上方连接检查。" : health?.mode === "public" ? "公开演示不保存匿名用户的个人历史。画像、历史和反馈数据仅向管理员开放。" : "确认后端连接后，可使用本地个人记忆或管理员入口。"}</p>
-      <Link href="/ops" className="mt-4 inline-flex rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white">管理员访问</Link>
+    return <section className="gb-panel p-5 sm:p-6">
+      <div className="flex items-center justify-between border-b border-ink/20 pb-3"><p className="gb-kicker">{locale === "zh" ? "玩家档案" : "Player file"}</p><span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/65">PRIVATE</span></div>
+      <h3 className="mt-5 text-xl font-semibold">{locale === "zh" ? "个人偏好与历史" : "Profile and history"}</h3>
+      <p className="mt-3 text-sm leading-7 text-ink/65">{connectionError ? (locale === "zh" ? "暂时无法读取后端连接状态，请先重试上方连接检查。" : "The backend connection status is unavailable. Retry the connection check above.") : health?.mode === "public" ? (locale === "zh" ? "公开演示不保存匿名用户的个人历史。画像、历史和反馈数据仅向管理员开放。" : "The public demo does not save anonymous history. Profiles, history and feedback are private administrator features.") : (locale === "zh" ? "确认后端连接后，可使用本地个人记忆或管理员入口。" : "Connect the backend to use local memory or administrator access.")}</p>
+      <Link href="/ops" className="gb-button mt-5 inline-flex items-center gap-5 border-ink bg-ink px-4 py-3 text-sm font-semibold text-white">{locale === "zh" ? "管理员访问" : "Administrator access"}<span aria-hidden="true">↗</span></Link>
     </section>;
   }
 
   return (
-    <section className="rounded-[2rem] border border-white/60 bg-white/78 p-6 shadow-card">
-      <div className="flex items-center justify-between gap-3">
+    <section className="gb-panel p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-ink/20 pb-5">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ember">Memory</p>
-          <h3 className="mt-2 text-2xl font-semibold text-ink">
+          <p className="gb-kicker">{locale === "zh" ? "玩家档案" : "Player file"}</p>
+          <h3 className="mt-2 text-xl font-semibold text-ink">
             {locale === "zh" ? "个人偏好与历史" : "Profile and history"}
           </h3>
         </div>
-        <span className="rounded-full bg-mist px-3 py-1 text-xs text-ink/70">{sessionId}</span>
+        <div className="max-w-full border-l-2 border-ember pl-3"><p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">SESSION</p><p className="mt-1 break-all font-mono text-[10px] text-ink/65">{sessionId}</p></div>
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -133,7 +134,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           <input
             value={profile.user_id}
             onChange={(event) => onProfileChange({ ...profile, user_id: event.target.value })}
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           />
         </label>
         <label className="text-sm text-ink/75">
@@ -141,7 +142,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           <input
             value={profile.display_name ?? ""}
             onChange={(event) => onProfileChange({ ...profile, display_name: event.target.value || null })}
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           />
         </label>
         <label className="text-sm text-ink/75">
@@ -151,7 +152,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
             onChange={(event) =>
               onProfileChange({ ...profile, skill_level: event.target.value as UserProfile["skill_level"] })
             }
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           >
             <option value="beginner">beginner</option>
             <option value="intermediate">intermediate</option>
@@ -165,7 +166,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
             onChange={(event) =>
               onProfileChange({ ...profile, preferred_style: event.target.value as UserProfile["preferred_style"] })
             }
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           >
             <option value="concise">concise</option>
             <option value="balanced">balanced</option>
@@ -177,7 +178,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           <input
             value={profile.favorite_role ?? ""}
             onChange={(event) => onProfileChange({ ...profile, favorite_role: event.target.value || null })}
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           />
         </label>
         <label className="text-sm text-ink/75">
@@ -185,7 +186,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           <input
             value={profile.favorite_character ?? ""}
             onChange={(event) => onProfileChange({ ...profile, favorite_character: event.target.value || null })}
-            className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+            className="gb-field w-full"
           />
         </label>
       </div>
@@ -203,53 +204,53 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
                 .filter(Boolean),
             })
           }
-          className="w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-ink outline-none"
+          className="gb-field w-full"
         />
       </label>
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-5 flex flex-wrap gap-3 border-t border-ink/20 pt-5">
         <button
           type="button"
           onClick={handleSaveProfile}
           disabled={savingProfile}
-          className="rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="gb-button border-ink bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
           {savingProfile ? (locale === "zh" ? "保存中..." : "Saving...") : locale === "zh" ? "保存画像" : "Save profile"}
         </button>
         <button
           type="button"
           onClick={handleLoadProfile}
-          className="rounded-full bg-mist px-4 py-2 text-sm font-semibold text-ink"
+          className="gb-button border-ink bg-white px-4 py-3 text-sm font-semibold text-ink hover:bg-gold/30"
         >
           {locale === "zh" ? "载入画像" : "Load profile"}
         </button>
       </div>
 
-      {message ? <p className="mt-3 text-sm text-ink/68">{message}</p> : null}
+      {message ? <p role="status" className="mt-3 border-l-2 border-ember pl-3 text-sm leading-7 text-ink/70">{message}</p> : null}
 
       <div className="mt-6">
-        <div className="flex items-center justify-between gap-3">
-          <h4 className="text-lg font-semibold text-ink">{locale === "zh" ? "最近历史" : "Recent history"}</h4>
-          {loadingHistory ? <span className="text-xs text-ink/55">{locale === "zh" ? "加载中..." : "Loading..."}</span> : null}
+        <div className="flex items-center justify-between gap-3 border-y border-ink bg-mist px-3 py-3">
+          <h4 className="text-sm font-semibold text-ink">{locale === "zh" ? "最近历史" : "Recent history"}</h4>
+          {loadingHistory ? <span className="text-xs text-ink/65">{locale === "zh" ? "加载中..." : "Loading..."}</span> : null}
         </div>
-        <div className="mt-3 grid gap-3">
+        <div className="divide-y divide-ink/20">
           {historyError ? (
-            <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-800"><p role="alert">{historyError}</p><button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-3 font-semibold underline">重试读取历史</button></div>
+            <div className="border-l-2 border-red-700 bg-red-50 p-4 text-sm leading-7 text-red-800"><p role="alert">{historyError}</p><button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-3 font-semibold underline underline-offset-4">{locale === "zh" ? "重试读取历史" : "Retry history"}</button></div>
           ) : loadingHistory ? (
-            <p className="p-4 text-sm text-ink/60">{locale === "zh" ? "正在读取历史…" : "Loading history…"}</p>
+            <p className="p-4 text-sm text-ink/65">{locale === "zh" ? "正在读取历史…" : "Loading history…"}</p>
           ) : history.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-ink/15 bg-mist p-4 text-sm text-ink/60">
+            <div className="border-b border-dashed border-ink/25 px-3 py-6 text-sm leading-7 text-ink/65">
               {profile.user_id ? locale === "zh" ? "还没有可展示的历史记录。" : "No history available yet." : locale === "zh" ? "填写 User ID 后读取对应历史。" : "Enter a User ID to load history."}
             </div>
           ) : (
             history.map((item) => (
-              <article key={`${item.created_at}-${item.question}`} className="rounded-3xl bg-mist p-4">
-                <div className="flex items-center justify-between gap-3">
+              <article key={`${item.created_at}-${item.question}`} className="px-3 py-5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="text-sm font-semibold text-ink">{item.question}</p>
-                  <span className="text-xs text-ink/55">{formatTimestamp(item.created_at)}</span>
+                  <span className="font-mono text-[10px] text-ink/65">{formatTimestamp(item.created_at)}</span>
                 </div>
-                <p className="mt-2 text-sm text-ink/68">{item.response.summary}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-pine">{item.game}</p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-ink/70">{item.response.summary}</p>
+                <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.1em] text-ember">{item.game}</p>
               </article>
             ))
           )}
