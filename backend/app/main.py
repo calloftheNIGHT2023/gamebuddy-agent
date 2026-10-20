@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import analysis, health, memory, ops
+from app.api.routes import analysis, health, memory, ops, play
 from app.core.config import settings
 from app.security import RequestBodyLimitMiddleware
 
@@ -41,6 +41,7 @@ app.include_router(health.router)
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(memory.router, prefix="/api/v1")
 app.include_router(ops.router, prefix="/api/v1")
+app.include_router(play.router, prefix="/api/v1")
 
 
 @app.get("/")

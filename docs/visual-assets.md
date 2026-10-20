@@ -1,6 +1,6 @@
 # Visual assets
 
-Verified on 2026-10-20. These are original game-art sample scenes by **Kenney**, downloaded from the creator's freely available asset packs. They are not screenshots of Pokemon, League of Legends, or another licensed game, and should not be presented as footage from those games.
+Verified on 2026-10-20. The scenes by **Kenney** are used as map backgrounds in GameBuddy's original games **松风镇**, **河谷争夺** and **地牢余火**. Live player, enemy, objective and route layers are drawn by the game interface over these backgrounds. The original source art comes from the creator's freely available asset packs.
 
 The production files below are byte-for-byte copies of each pack's `Sample.png`: no image generation, redrawing, cropping, resizing, or format conversion. Combined transfer size is **163,572 bytes (about 160 KiB)**. Keep the original scene files intact; the interface can choose its display crop with CSS.
 

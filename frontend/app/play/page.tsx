@@ -1,17 +1,18 @@
 "use client";
 
-// 可玩 demo 导航页，用于展示所有单机实验模式入口。
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
+import { GameArt } from "@/components/game-art";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { GameArt, gameArtwork } from "@/components/game-art";
 import { SiteFooter, WorkspaceNav } from "@/components/workspace-nav";
 import { playHubContent, translations } from "@/lib/content";
 import type { GameKey, Locale } from "@/lib/types";
 
-const genres: GameKey[] = ["pokemon-battle-demo", "moba-postmatch-demo", "rpg-build-demo"];
-
+const originals: { scene: string; art: GameKey; title: string; english: string; genre: string; description: string; enDescription: string }[] = [
+  { scene: "town", art: "pokemon-battle-demo", title: "松风镇", english: "Pinewind", genre: "探索 / 回合制", description: "沿着林间小路找回三份物资，在天黑前回到镇门。巡逻队在靠近，别忘了留点体力。", enDescription: "Gather three supply caches and return to the town gate before nightfall." },
+  { scene: "river", art: "moba-postmatch-demo", title: "河谷争夺", english: "River Front", genre: "战术 / 夺旗", description: "利用两座桥穿过河谷，拿下三面旗。是先打掉守卫，还是从另一条路绕过去？", enDescription: "Cross the bridges, deal with the patrols and claim all three flags." },
+  { scene: "dungeon", art: "rpg-build-demo", title: "地牢余火", english: "Last Ember", genre: "战斗 / 闯关", description: "带上两瓶药水，找齐符文再撤离。守卫不会等你回满体力，每个回合都得算。", enDescription: "Find the runes and escape the dungeon. Make every potion and every turn count." },
+];
 const modes = [
   { href: "/play/pokemon-duel", key: "pokemon-duel" },
   { href: "/play/heroes-and-monsters", key: "heroes-and-monsters" },
@@ -20,74 +21,22 @@ const modes = [
   { href: "/play/rpg-build-lab", key: "rpg-build-lab" },
   { href: "/play/survivor-sandbox", key: "survivor-sandbox" },
 ] as const;
-
 export default function PlayHubPage() {
-  const [locale, setLocale] = useState<Locale>("en");
-
+  const [locale, setLocale] = useState<Locale>("zh");
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const queryLocale = params.get("lang");
-    if (queryLocale === "en" || queryLocale === "zh") {
-      setLocale(queryLocale);
-      return;
-    }
-    const storedLocale = window.localStorage.getItem("gamebuddy:locale");
-    if (storedLocale === "en" || storedLocale === "zh") {
-      setLocale(storedLocale);
-    }
+    const query = new URLSearchParams(window.location.search).get("lang");
+    const stored = window.localStorage.getItem("gamebuddy:locale");
+    if (query === "zh" || query === "en") setLocale(query);
+    else if (stored === "zh" || stored === "en") setLocale(stored);
   }, []);
-
+  const english = locale === "en";
   const t = playHubContent[locale];
-  const common = translations[locale];
-
-  return (
-    <main lang={locale === "zh" ? "zh-CN" : "en"} className="gb-page min-h-screen px-5 py-6 text-ink sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-7xl">
-        <WorkspaceNav current="play" locale={locale} />
-        <div className="gb-issue-line items-center">
-          <span>GAME INDEX / {locale === "zh" ? "可玩原型目录" : "Playable prototypes"}</span>
-          <div className="flex flex-wrap items-center gap-3">
-            <LocaleSwitcher locale={locale} label={common.langLabel} onLocaleChange={setLocale} />
-            <Link href={`/?lang=${locale}`} className="gb-button-light border-ink bg-white px-4 py-2 text-xs font-semibold transition-colors hover:bg-ink hover:text-white">
-              ← {t.back}
-            </Link>
-          </div>
-        </div>
-
-        <header className="grid gap-8 py-10 sm:py-14 lg:grid-cols-[1fr_12rem] lg:items-end">
-          <div>
-            <p className="gb-kicker">{t.eyebrow} / GAME INDEX</p>
-            <h1 className="mt-4 max-w-4xl font-display text-4xl leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">{t.title}</h1>
-            <p className="mt-5 max-w-3xl text-sm leading-7 text-ink/65 sm:text-base">{t.description}</p>
-          </div>
-          <div className="flex items-center gap-4 border-l-4 border-ember bg-gold px-5 py-4 lg:block">
-            <span className="font-mono text-5xl font-bold leading-none lg:text-6xl">{String(modes.length).padStart(2, "0")}</span>
-            <p className="font-mono text-[10px] font-semibold uppercase leading-5 tracking-[0.12em] lg:mt-3">{locale === "zh" ? "个可玩模块" : "Playable modules"}<br /><span className="font-normal text-ink/65">IN YOUR BROWSER</span></p>
-          </div>
-        </header>
-
-        <div className="mb-8 grid grid-cols-3 border-y border-l border-ink/30">
-          {genres.map((genre) => <figure key={genre} className="min-w-0 border-r border-ink/30 bg-white"><GameArt game={genre} className="aspect-[1.35] sm:aspect-[2.3]" /><figcaption className="flex flex-wrap justify-between gap-1 border-t border-ink/20 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.08em]"><span>{locale === "zh" ? gameArtwork[genre].label : gameArtwork[genre].english}</span><span className="text-ink/65">{locale === "zh" ? "类型插画" : "Illustration"}</span></figcaption></figure>)}
-        </div>
-
-        <section aria-label={t.eyebrow} className="border-y-2 border-ink">
-          <div className="hidden grid-cols-[4rem_1.1fr_1.2fr_8rem] gap-6 border-b border-ink bg-ink px-5 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-white md:grid lg:grid-cols-[5rem_1.1fr_1.2fr_8rem]">
-            <span>NO.</span><span>{locale === "zh" ? "游戏模块" : "Game module"}</span><span>{locale === "zh" ? "玩法概要" : "What you play"}</span><span className="text-right">{locale === "zh" ? "开始" : "Launch"}</span>
-          </div>
-          <div className="divide-y divide-ink/30">{modes.map((mode, index) => (
-            <article key={mode.href} className="group grid grid-cols-[2.5rem_1fr] items-start gap-x-4 gap-y-4 px-3 py-6 transition-colors hover:bg-white sm:px-5 md:grid-cols-[4rem_1.1fr_1.2fr_8rem] md:items-center md:gap-6 md:py-8 lg:grid-cols-[5rem_1.1fr_1.2fr_8rem]">
-              <span aria-hidden="true" className="font-mono text-2xl font-bold leading-none text-ember sm:text-3xl md:text-4xl">{String(index + 1).padStart(2, "0")}</span>
-              <div className="min-w-0"><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/65">{t.modes[mode.key].tag}</p><h2 className="mt-2 text-xl font-semibold leading-7 group-hover:text-ember lg:text-2xl">{t.modes[mode.key].title}</h2></div>
-              <p className="col-start-2 text-sm leading-7 text-ink/65 md:col-start-auto">{t.modes[mode.key].description}</p>
-              <Link href={`${mode.href}?lang=${locale}`} className="gb-button-light col-start-2 inline-flex w-fit items-center justify-between gap-4 border-ink bg-white px-3 py-3 text-xs font-semibold transition-colors hover:bg-ink hover:text-white md:col-start-auto md:w-full">
-                {t.open}<span aria-hidden="true">↗</span>
-              </Link>
-            </article>
-          ))}</div>
-        </section>
-        <div className="flex flex-wrap items-center justify-between gap-3 py-5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65"><span>GAMEBUDDY / PLAYABLE PROTOTYPES</span><span>{locale === "zh" ? "选择模块，直接开局。" : "Pick a mode. Start playing."}</span></div>
-        <SiteFooter locale={locale} />
-      </div>
-    </main>
-  );
+  return <main lang={english ? "en" : "zh-CN"} className="gb-page">
+    <WorkspaceNav current="play" locale={locale} />
+    <div className="gb-issue-line items-center"><span>GAMEBUDDY / {english ? "THE ARCADE" : "游戏大厅"}</span><LocaleSwitcher locale={locale} label={translations[locale].langLabel} onLocaleChange={setLocale} /></div>
+    <header className="py-10 md:py-14"><p className="gb-kicker text-ember">PICK A WORLD</p><h1 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">{english ? "Where to tonight?" : "今晚，去哪里？"}</h1><p className="mt-5 text-sm leading-7 text-ink/65">{english ? "Pick a map and jump in. Your next move is yours to make." : "点开就能玩。走错了没关系，再开一局。"}</p></header>
+    <div className="gb-game-grid">{originals.map((game, index) => <article key={game.scene} className="gb-native-card"><Link href={`/play/field-notes/?scene=${game.scene}`} className="gb-native-cover"><GameArt game={game.art} /><span className="sr-only">{english ? game.english : game.title}</span></Link><div className="gb-game-info"><div className="gb-game-tags"><span>0{index + 1} / {english ? game.english.toUpperCase() : game.genre}</span></div><h2 className="mb-3 mt-3 text-2xl font-black">{english ? game.english : game.title}</h2><p>{english ? game.enDescription : game.description}</p><Link className="gb-button mt-5 w-full justify-between" href={`/play/field-notes/?scene=${game.scene}`}><span>{english ? "Start playing" : "开局"}</span><span aria-hidden="true">↗</span></Link></div></article>)}</div>
+    <section className="gb-section"><div className="gb-section-heading"><h2>{english ? "More games" : "再玩点别的"}</h2><span className="gb-kicker text-ink/65">06 / GAMES</span></div><div className="mt-4 divide-y divide-ink/20 border-b border-ink/30">{modes.map((mode, index) => <article key={mode.key} className="grid items-start gap-4 py-6 sm:grid-cols-[36px_1fr_auto] sm:items-center"><span className="font-mono text-sm text-ember">{String(index + 1).padStart(2, "0")}</span><div className="min-w-0"><h3 className="text-lg font-bold">{t.modes[mode.key].title}</h3><p className="mt-2 max-w-3xl text-xs leading-6 text-ink/65">{t.modes[mode.key].description}</p></div><Link className="gb-button-light w-fit text-xs" href={`${mode.href}?lang=${locale}`}>{english ? "Play" : "开始游戏"} ↗</Link></article>)}</div></section>
+    <SiteFooter locale={locale} />
+  </main>;
 }

@@ -1,5 +1,17 @@
 # GameBuddy Agent
 
+## Play and review | 小游戏与战局分析
+
+Open `/` to play three original turn-based games, or `/play/field-notes/?scene=town` for the full game page:
+
+- **松风镇 / Pinewind**: recover three supply caches and return to the gate.
+- **河谷争夺 / River Front**: cross the river and take three flags.
+- **地牢余火 / Last Ember**: collect two runes and reach the exit.
+
+The existing CC0 scene art is now used as the actual map background, with live player, enemy and objective layers. Movement, attacks, ranged strikes, rest and potions update a deterministic turn engine. The analysis button submits a frozen snapshot of that game to `POST /api/v1/play/analyze`; advice covers the current health, stamina, enemy positions and remaining route. The following turn is played from the same ongoing game. Analysis responses are bound to their scene and turn.
+
+All gameplay runs in the browser. The backend provides the game analysis and local Ops records. Run `npm run test:games` in `frontend/` for the rules and completion-path checks. Art sources and licenses are in [visual-assets.md](docs/visual-assets.md).
+
 ## Local-first assistant and Agent Ops | 本地助手与迭代闭环
 
 The app runs without an API key or MongoDB. Start the existing FastAPI backend and Next.js frontend, then open:
