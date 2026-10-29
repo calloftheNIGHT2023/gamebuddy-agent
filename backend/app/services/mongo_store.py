@@ -59,16 +59,14 @@ class MongoStore:
         if stored_profile is None:
             return request_profile
         merged = stored_profile.model_dump()
-        for key, value in request_profile.model_dump().items():
-            if value is None:
-                continue
-            merged[key] = (value or merged.get(key, [])) if isinstance(value, list) else value
+        # Missing fields inherit; explicit null/[] clears the old value.
+        merged.update(request_profile.model_dump(exclude_unset=True))
         return UserProfile.model_validate(merged)
 
     def upsert_user_profile(self, profile: UserProfile | None) -> None:
         if profile is None or not profile.user_id:
             return
-        payload = profile.model_dump(mode="json", exclude_none=True)
+        payload = profile.model_dump(mode="json")
         payload["updated_at"] = datetime.now(UTC).isoformat()
         self._local.put("user_profiles", profile.user_id, payload)
         if self.enabled:
@@ -271,8 +269,7 @@ class MongoStore:
     ) -> list[dict[str, Any]]:
         query = {key: value for key, value in {"user_id": user_id, "session_id": session_id}.items() if value}
         # Filter before limiting so older users' records stay accessible.
-        local = [item for item in self._local.list(collection, limit=2**31 - 1)
-                 if all(item.get(key) == value for key, value in query.items())]
+        local = self._local.find(collection, query, limit=limit)
         remote: list[dict[str, Any]] = []
         if self.enabled:
             try:

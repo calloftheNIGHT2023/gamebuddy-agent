@@ -73,3 +73,9 @@ export type FeedbackRequest = {
 export type FeedbackItem = FeedbackRequest & {
   created_at: string;
 };
+export type MemoryGame = GameKey | "town" | "river" | "dungeon";
+export type PlayerMemory = {
+  id: string; user_id: string; game: MemoryGame | null; kind: "note" | "goal" | "lesson" | "episode";
+  key: string; content: string; revision: number; source: "user" | "explicit_request" | "game";
+  source_id: string | null; created_at: string; updated_at: string; expires_at: string | null;
+};

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from app.models.schemas import AnalysisResponse, AssistantRequest, AssistantResponse, StateAnalysisRequest, SupportedGame, UserProfile
 from app.services import ops
 from app.services.orchestrator import GameBuddyOrchestrator
+from app.services.player_memory import MemoryConflict
 from app.security import RequestAccess, public_policy_id, public_profile, request_access
 
 # 这个路由模块只做“HTTP 层”的工作：
@@ -35,10 +36,13 @@ def analyze_state(payload: StateAnalysisRequest, access: RequestAccess = Depends
 
 @router.post("/assistant", response_model=AssistantResponse)
 def assistant(payload: AssistantRequest, access: RequestAccess = Depends(request_access)) -> AssistantResponse:
-    return orchestrator.assistant(
-        payload.game, payload.task, payload.state, payload.question,
-        **_execution_options(payload, access),
-    )
+    try:
+        return orchestrator.assistant(
+            payload.game, payload.task, payload.state, payload.question,
+            **_execution_options(payload, access),
+        )
+    except MemoryConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 def _execution_options(payload: StateAnalysisRequest | AssistantRequest, access: RequestAccess) -> dict:

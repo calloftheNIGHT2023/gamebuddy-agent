@@ -10,12 +10,19 @@
 - `POST /api/v1/analyze/screenshot`
 - `GET /api/v1/memory/profile/{user_id}`
 - `POST /api/v1/memory/profile`
+- `PATCH /api/v1/memory/profile/{user_id}`
+- `GET /api/v1/memory/items`
+- `POST /api/v1/memory/items`
+- `PUT /api/v1/memory/items/{id}`
+- `DELETE /api/v1/memory/items/{id}`
 - `GET /api/v1/memory/history`
 - `POST /api/v1/memory/feedback`
 - `GET /api/v1/memory/feedback`
 - `GET /api/v1/memory/training-samples`
 
 接口目标是保持简单、稳定、易扩展。
+
+玩家档案、跨会话召回、显式记忆更新、到期与删除的完整约定见 [玩家记忆](player-memory.md)。这些接口均沿用本地/管理员访问限制。
 
 ## `POST /api/v1/play/analyze`
 

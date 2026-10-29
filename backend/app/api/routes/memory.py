@@ -3,15 +3,60 @@
 import json
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response as ApiResponse
 from fastapi.responses import Response
 
 from app.models.schemas import AnalysisHistoryItem, AnalysisResponse, FeedbackItem, FeedbackRequest, TrainingSample, UserProfile, UserProfileUpsertRequest
 from app.services import ops
 from app.services.mongo_store import mongo_store
 from app.security import require_private_access
+from app.models.player_memory import MemoryEdit, MemoryGame, MemoryWrite, PlayerMemory
+from app.services.player_memory import MemoryConflict, player_memory
 
-router = APIRouter(tags=["memory"], dependencies=[Depends(require_private_access)])
+
+def no_cache(response: ApiResponse):
+    response.headers["Cache-Control"] = "no-store"
+
+router = APIRouter(tags=["memory"], dependencies=[Depends(require_private_access), Depends(no_cache)])
+
+
+def memory_result(operation):
+    try:
+        return operation()
+    except MemoryConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error.args[0])) from error
+
+
+@router.get("/memory/items", response_model=list[PlayerMemory])
+def list_player_memories(user_id: str = Query(min_length=1, max_length=128), game: MemoryGame | None = None):
+    return player_memory.list(user_id, game)
+
+
+@router.post("/memory/items", response_model=PlayerMemory)
+def write_player_memory(payload: MemoryWrite):
+    return memory_result(lambda: player_memory.put(payload.user_id, payload, payload.expected_revision))
+
+
+@router.put("/memory/items/{memory_id}", response_model=PlayerMemory)
+def edit_player_memory(memory_id: str, payload: MemoryEdit):
+    return memory_result(lambda: player_memory.edit(payload.user_id, memory_id, payload.content, payload.ttl_days, payload.expected_revision))
+
+
+@router.delete("/memory/items/{memory_id}", status_code=204)
+def delete_player_memory(memory_id: str, user_id: str = Query(min_length=1, max_length=128), expected_revision: int = Query(ge=1)):
+    memory_result(lambda: player_memory.delete(user_id, memory_id, expected_revision))
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
+@router.patch("/memory/profile/{user_id}", response_model=UserProfile)
+def patch_user_profile(user_id: str, payload: UserProfile):
+    if not user_id.strip() or len(user_id) > 128 or (payload.user_id is not None and payload.user_id != user_id):
+        raise HTTPException(status_code=422, detail="Player ID must match the profile")
+    profile = mongo_store.merge_user_profile(payload.model_copy(update={"user_id": user_id}))
+    mongo_store.upsert_user_profile(profile)
+    return profile
 
 
 @router.get("/memory/profile/{user_id}", response_model=UserProfile | None)

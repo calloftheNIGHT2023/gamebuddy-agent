@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
-import { apiRequest, jsonPost } from "@/lib/api-client";
+import { apiRequest, getAdminToken, isLocalPage, jsonPost } from "@/lib/api-client";
+import { MemoryUsed } from "@/components/memory-used";
 import {
   SCENES, SCENE_ORDER, GRID_WIDTH, GRID_HEIGHT, actionError, canMoveTo, createGame,
   distance, positionLabel, sameCell, snapshotGame, stepGame,
@@ -43,6 +44,7 @@ export function FieldGame({ initialScene = "town", embedded = false, onSceneChan
   const currentState = useRef(state);
   const currentScene = useRef(scene);
   const runSequence = useRef(0);
+  const runIdentity = useRef<string | null>(null);
   const analysisSequence = useRef(0);
   const board = useRef<HTMLDivElement>(null);
 
@@ -59,6 +61,7 @@ export function FieldGame({ initialScene = "town", embedded = false, onSceneChan
   function startScene(nextScene: SceneKey) {
     // Requests belong to a run, not just a scene name or a turn number.
     runSequence.current += 1;
+    runIdentity.current = crypto.randomUUID();
     analysisSequence.current += 1;
     const next = createGame(nextScene);
     currentScene.current = nextScene;
@@ -106,7 +109,12 @@ export function FieldGame({ initialScene = "town", embedded = false, onSceneChan
     setPendingTurn(snapshot.turn);
     setAnalysisError(null);
     try {
-      const response = await apiRequest<AnalysisResponse>("/play/analyze", jsonPost({ scene: snapshotScene, state: snapshot }), { authorize: false });
+      let playerId: string | undefined;
+      if (isLocalPage() || getAdminToken()) {
+        try { const stored = JSON.parse(window.localStorage.getItem("gamebuddy:user-profile") || "null"); if (typeof stored?.user_id === "string" && stored.user_id.trim()) playerId = stored.user_id.trim(); } catch { /* Playing does not require a stored player ID. */ }
+      }
+      if (playerId && !runIdentity.current) runIdentity.current = crypto.randomUUID();
+      const response = await apiRequest<AnalysisResponse>("/play/analyze", jsonPost({ scene: snapshotScene, state: snapshot, player_id: playerId, run_id: playerId ? runIdentity.current : undefined }));
       if (run !== runSequence.current || request !== analysisSequence.current) return;
       const annotated = { ...response, metadata: { ...response.metadata, play_scene: snapshotScene, analyzed_turn: snapshot.turn } };
       setAnalysis({ response: annotated, turn: snapshot.turn, scene: snapshotScene });
@@ -172,6 +180,7 @@ export function FieldGame({ initialScene = "town", embedded = false, onSceneChan
         <section className="fg-analysis"><div className="fg-aside-heading"><p className="fg-kicker">THE NEXT MOVE</p><h3>这一步，怎么走？</h3></div><p className="fg-analysis-intro">该打、该绕，还是先歇一回合？</p><button type="button" className="fg-analyze-button" onClick={analyzeTurn} disabled={pendingTurn !== null}>{pendingTurn !== null ? `正在分析第 ${pendingTurn} 回合…` : "分析这一步"}<span aria-hidden="true">↗</span></button>
           {analysisError && <p className="fg-analysis-error" role="alert">{analysisError}</p>}
           {analysis && <div className={`fg-answer ${stale ? "is-stale" : ""}`}><p className="fg-answer-stamp">{SCENES[analysis.scene].name} / 第 {analysis.turn} 回合</p>{stale && <p className="fg-stale" role="status">局势已改变，重新分析可查看第 {state.turn} 回合的建议。</p>}<h4>{analysis.response.summary}</h4><div className="fg-answer-direction"><span>优先方向</span><p>{analysis.response.direction_prediction.best_direction}</p></div><ol>{analysis.response.next_steps.map((step, index) => <li key={`${index}-${step}`}><span>{index + 1}.</span>{step}</li>)}</ol></div>}
+          {analysis && <MemoryUsed metadata={analysis.response.metadata} />}
           {!analysis && !analysisError && <p className="fg-analysis-empty">先走一步，或直接分析开局。建议会标明对应的回合。</p>}
         </section>
         <section className="fg-log"><div className="fg-log-heading"><h3>刚刚发生了什么</h3><span>TURN LOG</span></div><ol>{logs.map((item, index) => <li key={`${item.turn}-${item.kind}-${index}`} className={`fg-event-${item.kind}`}><span>{String(item.turn).padStart(2, "0")}</span><p>{item.text}</p></li>)}</ol></section>

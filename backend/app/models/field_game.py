@@ -106,6 +106,8 @@ class FieldState(SnapshotModel):
 class FieldAnalysisRequest(SnapshotModel):
     scene: Scene
     state: FieldState
+    player_id: str | None = Field(default=None, min_length=1, max_length=128)
+    run_id: str | None = Field(default=None, min_length=1, max_length=64)
 
     @model_validator(mode="after")
     def scene_objectives(self):

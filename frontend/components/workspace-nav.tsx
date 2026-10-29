@@ -1,10 +1,11 @@
 import Link from "next/link";
 
-export function WorkspaceNav({ current, locale = "zh" }: { current: "home" | "review" | "assistant" | "ops" | "play"; locale?: string }) {
+export function WorkspaceNav({ current, locale = "zh" }: { current: "home" | "review" | "assistant" | "ops" | "play" | "memory"; locale?: string }) {
   const english = locale === "en";
   const links = [
     { key: "home", href: "/", label: english ? "Play" : "开局" },
     { key: "assistant", href: "/assistant", label: english ? "Playbook" : "游戏助手" },
+    { key: "memory", href: "/memory", label: english ? "Player memory" : "玩家记忆" },
     { key: "review", href: "/review", label: english ? "Review" : "复盘报告" },
     { key: "ops", href: "/ops", label: "Agent Ops" },
   ];

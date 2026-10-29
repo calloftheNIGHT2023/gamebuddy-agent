@@ -1,5 +1,11 @@
 # GameBuddy Agent
 
+## Player memory | 玩家记忆
+
+Open `/memory/` to manage a player's profile, game-specific goals, reminders and reviewed games. Explicit “记住：…” requests can update preferences or save a note; later sessions recall relevant notes and past user-reported events, with the selected memory visible beside the answer. Entries support revision checks, expiry and deletion. Identified player-memory requests stay local and do not call an external model. Public visitors continue to use stateless analysis.
+
+See [the memory lifecycle, storage and API](docs/player-memory.md). The existing private access boundary is unchanged.
+
 ## Play and review | 小游戏与战局分析
 
 Open `/` to play three original turn-based games, or `/play/field-notes/?scene=town` for the full game page:

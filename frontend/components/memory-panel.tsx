@@ -1,12 +1,13 @@
 "use client";
 
 // 记忆面板，用于读写用户画像并展示近期分析历史。
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import { getAnalysisHistory, getUserProfile, saveUserProfile } from "@/lib/api";
 import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import type { AnalysisHistoryItem, Locale, UserProfile } from "@/lib/types";
+import { PlayerMemoryPanel } from "@/components/player-memory-panel";
 
 type Props = {
   locale: Locale;
@@ -27,9 +28,14 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
   const [message, setMessage] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const [onlySession, setOnlySession] = useState(false);
   const { health, error: connectionError } = useConnectionStatus();
   const { hasToken, revision } = useAdminAccess();
   const privateAccess = health?.mode === "local" || hasToken;
+  const currentOwner = useRef(profile.user_id);
+  const currentAccess = useRef(privateAccess);
+  currentOwner.current = profile.user_id;
+  currentAccess.current = privateAccess;
 
   useEffect(() => {
     setHistoryError(null);
@@ -42,7 +48,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
     let active = true;
     setHistory([]);
     setLoadingHistory(true);
-    getAnalysisHistory({ userId: profile.user_id, sessionId, limit: 6 })
+    getAnalysisHistory({ userId: profile.user_id, sessionId: onlySession ? sessionId : undefined, limit: 6 })
       .then((items) => {
         if (active) {
           setHistory(items);
@@ -62,7 +68,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
     return () => {
       active = false;
     };
-  }, [profile.user_id, sessionId, privateAccess, revision, retry]);
+  }, [profile.user_id, sessionId, onlySession, privateAccess, revision, retry]);
 
   async function handleSaveProfile() {
     if (!profile.user_id) {
@@ -72,12 +78,14 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
 
     setSavingProfile(true);
     setMessage(null);
+    const owner = profile.user_id;
     try {
       const saved = await saveUserProfile(profile);
+      if (currentOwner.current !== owner || !currentAccess.current) return;
       onProfileChange(saved);
       setMessage(locale === "zh" ? "档案已保存。" : "Profile saved.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : locale === "zh" ? "保存档案失败。" : "Failed to save profile.");
+      if (currentOwner.current === owner) setMessage(error instanceof Error ? error.message : locale === "zh" ? "保存档案失败。" : "Failed to save profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -90,8 +98,10 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
     }
 
     setMessage(null);
+    const owner = profile.user_id;
     try {
       const loaded = await getUserProfile(profile.user_id);
+      if (currentOwner.current !== owner || !currentAccess.current) return;
       if (!loaded) {
         setMessage(locale === "zh" ? "还没有这个玩家的档案。" : "No saved profile found.");
         return;
@@ -103,7 +113,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
       });
       setMessage(locale === "zh" ? "档案已载入。" : "Profile loaded.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : locale === "zh" ? "载入档案失败。" : "Failed to load profile.");
+      if (currentOwner.current === owner) setMessage(error instanceof Error ? error.message : locale === "zh" ? "载入档案失败。" : "Failed to load profile.");
     }
   }
 
@@ -133,7 +143,8 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
           <span className="mb-2 block font-medium text-ink">User ID</span>
           <input
             value={profile.user_id}
-            onChange={(event) => onProfileChange({ ...profile, user_id: event.target.value })}
+            disabled={savingProfile}
+            onChange={(event) => onProfileChange({ user_id: event.target.value, display_name: null, skill_level: null, preferred_style: null, favorite_role: null, favorite_character: null, goals: [], notes: [] })}
             className="gb-field w-full"
           />
         </label>
@@ -148,13 +159,13 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
         <label className="text-sm text-ink/75">
           <span className="mb-2 block font-medium text-ink">{locale === "zh" ? "水平" : "Skill level"}</span>
           <select
-            value={profile.skill_level ?? "intermediate"}
+            value={profile.skill_level ?? ""}
             onChange={(event) =>
-              onProfileChange({ ...profile, skill_level: event.target.value as UserProfile["skill_level"] })
+              onProfileChange({ ...profile, skill_level: (event.target.value || null) as UserProfile["skill_level"] })
             }
             className="gb-field w-full"
           >
-            <option value="beginner">beginner</option>
+            <option value="">未设置</option><option value="beginner">beginner</option>
             <option value="intermediate">intermediate</option>
             <option value="advanced">advanced</option>
           </select>
@@ -162,13 +173,13 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
         <label className="text-sm text-ink/75">
           <span className="mb-2 block font-medium text-ink">{locale === "zh" ? "回复风格" : "Response style"}</span>
           <select
-            value={profile.preferred_style ?? "balanced"}
+            value={profile.preferred_style ?? ""}
             onChange={(event) =>
-              onProfileChange({ ...profile, preferred_style: event.target.value as UserProfile["preferred_style"] })
+              onProfileChange({ ...profile, preferred_style: (event.target.value || null) as UserProfile["preferred_style"] })
             }
             className="gb-field w-full"
           >
-            <option value="concise">concise</option>
+            <option value="">未设置</option><option value="concise">concise</option>
             <option value="balanced">balanced</option>
             <option value="detailed">detailed</option>
           </select>
@@ -208,6 +219,7 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
         />
       </label>
 
+      <label className="mt-4 block text-sm"><span className="mb-2 block font-medium">{locale === "zh" ? "个人提醒（每行一条）" : "Personal notes (one per line)"}</span><textarea rows={3} maxLength={3000} value={profile.notes.join("\n")} onChange={(event) => onProfileChange({ ...profile, notes: event.target.value.split("\n").map((text) => text.trim()).filter(Boolean).slice(0, 10) })} className="gb-field w-full" /></label>
       <div className="mt-5 flex flex-wrap gap-3 border-t border-ink/20 pt-5">
         <button
           type="button"
@@ -227,10 +239,12 @@ export function MemoryPanel({ locale, profile, sessionId, onProfileChange }: Pro
       </div>
 
       {message ? <p role="status" className="mt-3 border-l-2 border-ember pl-3 text-sm leading-7 text-ink/70">{message}</p> : null}
+      <PlayerMemoryPanel key={profile.user_id} userId={profile.user_id} />
 
       <div className="mt-6">
         <div className="flex items-center justify-between gap-3 border-y border-ink bg-mist px-3 py-3">
           <h4 className="text-sm font-semibold text-ink">{locale === "zh" ? "最近战局" : "Recent history"}</h4>
+          <label className="text-xs"><input type="checkbox" checked={onlySession} onChange={(event) => setOnlySession(event.target.checked)} className="mr-2" />{locale === "zh" ? "只看本次会话" : "This session only"}</label>
           {loadingHistory ? <span className="text-xs text-ink/65">{locale === "zh" ? "加载中..." : "Loading..."}</span> : null}
         </div>
         <div className="divide-y divide-ink/20">

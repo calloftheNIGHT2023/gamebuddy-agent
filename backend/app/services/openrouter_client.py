@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.core.config import settings
 from app.models.schemas import AnalysisResponse, DirectionPrediction, ReviewSection, TacticalAdviceItem, UserProfile
 from app.services.retrieval import retrieval_query, retrieve_knowledge
-from app.services.runtime import current_policy, offline_mode, public_request
+from app.services.runtime import current_policy, current_player_memory, offline_mode, public_request
 from app.services.tools import MAX_TOOL_CALLS, ToolRuntimeContext, execute_tool_call, get_tool_definitions, summarize_tool_names, tool_error
 
 
@@ -134,6 +134,10 @@ def maybe_enhance_analysis(
         return grounded
     if not settings.has_openrouter:
         grounded.metadata["llm_disabled_reason"] = "not_configured"
+        return grounded
+    # Long-term player memory stays local, including drafts and tool results.
+    if current_player_memory.get() is not None:
+        grounded.metadata["llm_disabled_reason"] = "private_memory_local_only"
         return grounded
 
     context = ToolRuntimeContext(

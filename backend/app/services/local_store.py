@@ -27,6 +27,22 @@ class LocalStore:
         )
         return connection
 
+    def find(self, collection: str, filters: dict[str, str], limit: int = 100) -> list[dict[str, Any]]:
+        """Filter a player's records in SQLite before limiting or decoding JSON."""
+        if not filters.keys() <= {"user_id", "session_id", "game"}:
+            raise ValueError("Unsupported memory filter")
+        if limit <= 0:
+            return []
+        conditions = "".join(f" AND json_extract(payload, '$.{key}') = ?" for key in filters)
+        with closing(self._connect()) as connection:
+            connection.execute("CREATE INDEX IF NOT EXISTS records_player_scope ON records "
+                               "(collection, json_extract(payload, '$.user_id'), json_extract(payload, '$.game'), updated_at DESC)")
+            rows = connection.execute(
+                "SELECT payload FROM records WHERE collection = ?" + conditions +
+                " ORDER BY updated_at DESC, record_key DESC LIMIT ?", (collection, *filters.values(), limit),
+            ).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
     def put(self, collection: str, key: str, payload: dict[str, Any]) -> None:
         serialized = json.dumps(payload, ensure_ascii=False, allow_nan=False)
         with closing(self._connect()) as connection, connection:
