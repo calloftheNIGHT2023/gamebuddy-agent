@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { SiteFooter, WorkspaceNav } from "@/components/workspace-nav";
 import { ConnectionStatus } from "@/components/connection-status";
 import { GameArt, gameArtwork } from "@/components/game-art";
+import { MemoryUsed } from "@/components/memory-used";
 import { useAdminAccess, useConnectionStatus } from "@/lib/connection";
 import { askAssistant, type AssistantResponse, type AssistantTask } from "@/lib/ops-api";
 import type { GameKey, GameState } from "@/lib/types";
@@ -44,6 +45,12 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
   const { health } = useConnectionStatus();
   const { hasToken } = useAdminAccess();
   const privateAccess = health?.mode === "local" || hasToken;
+  const sequence = useRef(0);
+  const memorySaved = Boolean((result?.analysis.metadata.memory as { saved?: unknown } | undefined)?.saved);
+
+  useEffect(() => {
+    sequence.current += 1; setResult(null); setError(null); setLoading(false);
+  }, [game, task, userId, privateAccess]);
 
   useEffect(() => {
     try {
@@ -69,12 +76,14 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
 
     setLoading(true);
     setResult(null);
+    const request = ++sequence.current;
     try {
       const response = await askAssistant({ game, task, question: question.trim(), state, user_profile: privateAccess && userId.trim() ? { user_id: userId.trim() } : undefined });
+      if (request !== sequence.current) return;
       setResult(response);
       try { window.sessionStorage.setItem("gamebuddy:last-result", JSON.stringify(response.analysis)); } catch { /* The answer remains usable when browser storage is disabled. */ }
-    } catch (cause) { setError(message(cause)); }
-    finally { setLoading(false); }
+    } catch (cause) { if (request === sequence.current) setError(message(cause)); }
+    finally { if (request === sequence.current) setLoading(false); }
   }
 
   return (
@@ -151,11 +160,12 @@ export function AssistantClient({ samples }: { samples: Record<GameKey, string> 
               <article className="px-6 py-7 md:px-8">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/20 pb-4">
                   <p className="font-mono text-[10px] uppercase tracking-wider text-ink/65">{tasks.find((item) => item.value === task)?.label} / RESPONSE</p>
-                  {result.evidence_status === "insufficient" && <span className="border border-[#f05a32] px-2 py-1 text-[10px] font-semibold text-[#a7361b]">资料不足</span>}
+                  {result.evidence_status === "insufficient" && !memorySaved && <span className="border border-[#f05a32] px-2 py-1 text-[10px] font-semibold text-[#a7361b]">资料不足</span>}
                 </div>
                 <p className="mt-5 whitespace-pre-wrap text-sm leading-8 text-ink/85">{result.answer}</p>
+                <MemoryUsed metadata={result.analysis.metadata} />
               </article>
-              {result.evidence_status === "insufficient" && <p role="status" className="mx-6 mb-6 border-l-2 border-[#f05a32] pl-4 text-xs leading-6 text-ink/65 md:mx-8">没找到相关攻略。补充角色、装备或战局后再试。</p>}
+              {result.evidence_status === "insufficient" && !memorySaved && <p role="status" className="mx-6 mb-6 border-l-2 border-[#f05a32] pl-4 text-xs leading-6 text-ink/65 md:mx-8">没找到相关攻略。补充角色、装备或战局后再试。</p>}
               {result.sources.length > 0 && <details className="border-t border-ink/30 px-6 py-5 md:px-8">
                 <summary className="cursor-pointer text-xs font-bold">参考资料 <span className="ml-2 font-mono text-[10px] font-normal text-ink/65">{result.sources.length} SOURCES</span></summary>
                 <ol className="mt-3 divide-y divide-ink/15">

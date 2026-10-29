@@ -9,7 +9,9 @@ from app.services.assistant import compose_answer, has_no_resources, qa_draft
 from app.services.game_packs import analyze_game, build_json_perception, build_screenshot_perception
 from app.services.mongo_store import mongo_store
 from app.services.openrouter_client import maybe_enhance_analysis
-from app.services.runtime import current_policy
+from app.services.runtime import current_policy, current_player_memory
+from app.services.player_memory import attach_memory, capture_memory, resolve_memory
+from app.services.retrieval import retrieval_query
 from app.services.state_validation import validate_state
 
 
@@ -55,6 +57,7 @@ class GameBuddyOrchestrator:
         started = perf_counter()
         policy = ops.get_policy(policy_id)
         token = current_policy.set(policy)
+        memory_token = current_player_memory.set(None)
         trace = {
             "id": uuid4().hex, "created_at": ops.now(), "game": game, "task": task,
             "question": question, "policy_id": policy["id"], "session_id": session_id,
@@ -71,9 +74,16 @@ class GameBuddyOrchestrator:
             trace["state"] = perception.extracted_state
             step("perception", began, {"source": perception.source, "notes": perception.perception_notes})
             began = perf_counter()
-            resolved = (mongo_store.merge_user_profile(user_profile) or user_profile) if persist else user_profile
+            base_profile = (mongo_store.merge_user_profile(user_profile) or user_profile) if persist else user_profile
+            memory = None
+            resolved = base_profile
+            if persist and base_profile and base_profile.user_id:
+                resolved, memory = resolve_memory(base_profile, game, retrieval_query(question, perception.extracted_state))
+                current_player_memory.set(memory)
             trace["user_profile"] = resolved.model_dump() if resolved else None
             step("profile", began, {"user_id": resolved.user_id if resolved else None, "loaded": resolved is not None})
+            if memory is not None:
+                step("memory", began, memory)
             began = perf_counter()
             if task == "qa":
                 response = maybe_enhance_analysis(
@@ -98,17 +108,27 @@ class GameBuddyOrchestrator:
             if task != "analysis":
                 response.summary = compose_answer(task, state, response, resolved, policy["max_next_steps"])
             response.next_steps = response.next_steps[:policy["max_next_steps"]]
+            if resolved and resolved.preferred_style == "concise":
+                response.next_steps = response.next_steps[:3]
             response.metadata.update({"trace_id": trace["id"], "policy_id": policy["id"], "task": task})
-            trace["response"] = response.model_dump()
-            trace["status"] = "fallback" if response.metadata.get("llm_status") == "fallback" else "success"
+            if memory is not None:
+                attach_memory(response, memory)
             if persist:
                 began = perf_counter()
-                mongo_store.upsert_user_profile(resolved)
+                # Don't write a loaded or game-scoped profile back on ID-only requests.
+                if user_profile and user_profile.model_fields_set - {"user_id"}:
+                    mongo_store.upsert_user_profile(base_profile)
+                saved = capture_memory(question, base_profile, game, trace["id"]) if task == "qa" else None
+                if saved:
+                    response.metadata["memory"]["saved"] = saved
+                    response.summary = f"已记下：{saved['content']}"
                 mongo_store.save_analysis_history(
                     game=game, question=question, session_id=session_id, user_profile=resolved,
                     extracted_state=perception.extracted_state, response=response, source=perception.source,
                 )
                 step("persistence", began, {"storage": "local-first"})
+            trace["response"] = response.model_dump()
+            trace["status"] = "fallback" if response.metadata.get("llm_status") == "fallback" else "success"
             return response
         except Exception as exc:
             trace["status"] = "error"
@@ -116,6 +136,7 @@ class GameBuddyOrchestrator:
             raise
         finally:
             current_policy.reset(token)
+            current_player_memory.reset(memory_token)
             trace["latency_ms"] = round((perf_counter() - started) * 1000, 3)
             if record_trace:
                 ops.save_trace(trace)

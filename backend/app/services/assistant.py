@@ -39,7 +39,8 @@ def compose_answer(task: str, state: dict, response: AnalysisResponse, profile=N
         if not sources:
             return "本地知识库没有找到与问题匹配的证据，暂时无法可靠回答。请补充游戏术语、具体状态，或扩充知识包。"
         lines = ["根据本地演示知识库："]
-        for index, source in enumerate(sources[:3], 1):
+        count = 1 if profile and profile.preferred_style == "concise" else 3
+        for index, source in enumerate(sources[:count], 1):
             lines.append(f"[{index}] {source['content']}\n来源：{source['source']} · {source['path']}")
         if response.metadata.get("llm_status") == "enhanced":
             lines.append(f"模型补充（请结合来源核对）：{response.summary}")

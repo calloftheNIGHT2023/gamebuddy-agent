@@ -5,6 +5,23 @@ const test = require("node:test");
 const vm = require("node:vm");
 const ts = require("typescript");
 
+test("a successful 204 memory deletion does not attempt to parse JSON", async () => {
+  const app = runtime({ handler: () => new Response(null, { status: 204 }) });
+  assert.equal(await app.api.apiRequest("/memory/items/example", { method: "DELETE" }), undefined);
+});
+
+test("saved player analysis sends an ID instead of stale browser preference values", async () => {
+  const output = ts.transpileModule(readFileSync(path.join(__dirname, "../lib/api.ts"), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText;
+  const sent = [];
+  const target = { exports: {} };
+  vm.runInNewContext(output, { module: target, exports: target.exports, URLSearchParams, FormData,
+    require: () => ({ apiRequest: async (path, init) => sent.push({ path, body: JSON.parse(init.body) }), jsonPost: (body) => ({ method: "POST", body: JSON.stringify(body) }) }) });
+  await target.exports.analyzeState("rpg-build-demo", "How do I improve?", {}, { userProfile: { user_id: "alice", preferred_style: "balanced", goals: ["stale goal"] } });
+  assert.deepEqual(sent[0].body.user_profile, { user_id: "alice" });
+});
+
 const compiled = ts.transpileModule(readFileSync(path.join(__dirname, "../lib/api-client.ts"), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;

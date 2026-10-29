@@ -95,6 +95,7 @@ async function performRequest<T>(path: string, init: RequestInit, options: Reque
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}, options: RequestOptions = {}): Promise<T> {
   return performRequest(path, init, options, async (response) => {
+    if (response.status === 204) return undefined as T;
     try { return await response.json() as T; }
     catch (error) {
       if (error instanceof Error && error.name === "AbortError") throw error;

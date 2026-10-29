@@ -1,13 +1,14 @@
 """后端共享数据模型，统一约束请求、响应和工具调用结构。"""
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # 当前后端允许的游戏类型枚举。
 # 这里直接用 Literal，既简单，也能让 FastAPI / Pydantic 自动做校验和文档生成。
 SupportedGame = Literal["pokemon-battle-demo", "moba-postmatch-demo", "rpg-build-demo"]
+ProfileText = Annotated[str, Field(max_length=300)]
 
 
 class PerceptionResult(BaseModel):
@@ -69,25 +70,19 @@ class AnalysisResponse(BaseModel):
 
 
 class UserProfile(BaseModel):
-    user_id: str | None = None
-    display_name: str | None = None
+    model_config = ConfigDict(str_strip_whitespace=True)
+    user_id: str | None = Field(default=None, max_length=128)
+    display_name: str | None = Field(default=None, max_length=80)
     skill_level: Literal["beginner", "intermediate", "advanced"] | None = None
     preferred_style: Literal["concise", "balanced", "detailed"] | None = None
-    favorite_role: str | None = None
-    favorite_character: str | None = None
-    goals: list[str] = Field(default_factory=list)
-    notes: list[str] = Field(default_factory=list)
+    favorite_role: ProfileText | None = None
+    favorite_character: ProfileText | None = None
+    goals: list[ProfileText] = Field(default_factory=list, max_length=10)
+    notes: list[ProfileText] = Field(default_factory=list, max_length=10)
 
 
-class UserProfileUpsertRequest(BaseModel):
-    user_id: str
-    display_name: str | None = None
-    skill_level: Literal["beginner", "intermediate", "advanced"] | None = None
-    preferred_style: Literal["concise", "balanced", "detailed"] | None = None
-    favorite_role: str | None = None
-    favorite_character: str | None = None
-    goals: list[str] = Field(default_factory=list)
-    notes: list[str] = Field(default_factory=list)
+class UserProfileUpsertRequest(UserProfile):
+    user_id: str = Field(min_length=1, max_length=128)
 
 
 class AnalysisHistoryItem(BaseModel):
