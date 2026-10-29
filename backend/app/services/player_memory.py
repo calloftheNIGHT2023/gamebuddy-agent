@@ -1,5 +1,7 @@
 """Scoped, bounded memory retrieval with explicit writes and real expiry/deletion."""
 
+from __future__ import annotations
+
 import math
 import re
 from contextlib import closing
